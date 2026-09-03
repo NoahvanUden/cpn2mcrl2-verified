@@ -245,7 +245,8 @@ $s_{p_3}$.
    $\subseteq$, $\setminus$, $\cup$, tupling) with their evaluation equations, and
    `toLPE_cond` becomes a genuine theorem — "the expression built evaluates to `Enabled`" —
    proved from those equations rather than by `rfl`. That is where Theorem 1 would acquire
-   content beyond bookkeeping.
+   content beyond bookkeeping. What that change involves is set out in
+   [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed).
 
 Separately, and whatever is done about the two above: nothing here connects the Lean to the
 translation as it is actually implemented. That would need extraction, a shared serialization
@@ -255,6 +256,102 @@ None of this makes anything on the other pages wrong. It bounds what the Lean es
 **given** that an LPE means the transition system Definition 15 assigns it, the reachability
 graph of a CPN and the LTS induced by the LPE Definition 14 builds from it are bisimilar, and
 that bisimilarity is fully proved.
+
+### 5.1 What it would take to show the emitted specification is well-formed
+
+Limit 2 above is narrower than it first reads, so it is worth stating exactly what is missing
+before saying what would close it.
+
+The CPN's own pieces already *are* expressions of the assumed language: `G t` has the type
+`L.ExprOn V (.color L.boolColor)`, and `Ein` and `Eout` land in `L.ExprOn V (.bag (C p))`.
+What is not an expression is the thing Definition 14 *assembles* from them. In `CPN.toLPE`
+the conjunction of bag inclusions is a Lean `Prop` built from the `HasSubset` instance on
+`Bag`, and the tupling, $\setminus$ and $\cup$ of $g_t$ are Lean operations on `CPN.Marking`.
+So the missing claim is precisely this: **$c_t$ and $g_t$ themselves live in `L.Expr`, not
+just their ingredients.**
+
+**Three readings of "well-formed".** They are not equally reachable.
+
+| Reading | Reachable in Lean? |
+| --- | --- |
+| $c_t$ and $g_t$ are terms of the expression language Chapter 2 assumes | Yes, and this is the reading the thesis's own framing supports |
+| Those terms are well-typed *mCRL2* data terms specifically | Yes, if `ExprLang` is committed to an mCRL2-shaped signature |
+| The printed text is accepted by `mcrl22lps` | No — an intrinsically typed term language establishes well-typedness, never well-formedness of text |
+
+The third would need a printer together with a formalized grammar; without the grammar the
+best available is an empirical round trip through the tool.
+
+> Whether the operations Definition 14 uses are native mCRL2 bag operators should be confirmed against the tool documentation before the second reading is relied on.
+
+**The structural blocker.** `ExprTy` has exactly two constructors, `.color c` and `.bag c`,
+and `varType` maps a variable to a `Color`. But in the LPE both $d : D$ and $h_t : H_t$ are
+variables whose sorts are *tuples*, so neither can be written as a variable of the language
+as it stands. This is where the restriction recorded in
+[§4.4](#44-the-expression-language-is-restricted-to-two-type-shapes) stops being harmless.
+
+What follows from it:
+
+1. `ExprTy` gains a product former, and `ExprTy.Value` maps it to a dependent function.
+2. `varType` becomes `Var → ExprTy Color`, which ripples into `Bindings`, `CPN.varTypeMem`
+   and every example.
+3. `ExprLang` gains the operations Definition 14 uses as fields — conjunction, bag
+   $\subseteq$, $\setminus$ and $\cup$, projection and tupling — each with an evaluation
+   equation.
+4. A substitution lemma. The free variables of $E(p,t)$ lie in $\mathrm{Var}(t)$; in the LPE
+   they become components of $h_t$. Relating "$E(p,t)$ evaluated under a binding $b$ of the
+   transition" to "the translated term evaluated under $d \mapsto M$ and $h \mapsto b$" is
+   the one genuinely new proof obligation.
+5. `LPE.cond` and `LPE.next` become terms and `LPE.semantics` denotes them, so `toLPE_cond`
+   and `toLPE_next` stop holding by `rfl` and become theorems proved from the evaluation
+   equations of item 3.
+
+The bounded $\forall$ over $pre(t)$ needs no quantifier in the data language: $pre(t)$ is a
+finite set of places known at translation time, so that conjunction is unfolded there.
+
+**Bags would have to become finitely supported.** One consequence has mathematical content
+rather than being bookkeeping. Bag inclusion on `Bag S := S → ℕ` is
+$\forall s \in S : m_1(s) \leq m_2(s)$, which is not decidable for an arbitrary $S$. For
+$c_t$ to be a $\textit{Bool}$-valued term rather than a proposition, bags have to be finitely
+supported and colors have to carry decidable equality.
+
+That reframes [§4.10](#410-the-condition-of-a-summand-is-a-proposition-not-a-boolean):
+`LPE.cond` landing in `Prop` is not a modelling convenience but a consequence of Definition 1
+modelling a bag as a total function into $\mathbb{N}$. It also runs with the grain of §4.1 of
+[mCRL2.md](mCRL2.md), where the thesis replaces bags with `FBag` and with lists for
+performance. Restricting `Bag` this way would be a further departure from Definition 1 as
+printed, to be recorded here alongside [§4.1](#41-bag-size-is-valued-in-the-extended-naturals)
+to [§4.3](#43-definition-1s-non-emptiness-is-dropped).
+
+**What would become load-bearing.** Several of the fields
+[§4.5](#45-every-side-condition-of-definition-5-is-inert) records as inert would start
+carrying weight: `finitePlaces` to enumerate the components of $D$ and to unfold the
+conjunction over $pre(t)$, `finiteV` to enumerate $H_t$, and `finiteColors`, `colorMem` and
+`varTypeMem` to emit the sort declarations. `inArc` and `outArc` would also have to be
+decidable, or `Finset`s, so that $pre(t)$ computes.
+
+**Three ways forward.**
+
+- **A. Restate the scope and stop.** The thesis defines $c_t$ and $g_t$ as mathematical
+  functions too, so a semantic `LPE` matches Definition 14 exactly. On this reading limit 2
+  is not a gap in fidelity but a declared boundary, and the formalization is complete
+  relative to the thesis.
+- **B. Add the operations to `ExprLang` as fields, keeping `Expr` abstract.** This reaches
+  the first reading and most of the second without an inductive syntax, a grammar or a
+  printer, and the general `toLPE_cond` becomes a theorem quantified over every expression
+  language satisfying the evaluation equations — which is where the content is. It is also
+  the closest to Chapter 2's own framing: the thesis already assumes the tools provide an
+  expression language, and this assumes only a richer one, carrying exactly the operations
+  Definition 14 uses. Most of the cost does not land on `Examples/`, since `CounterNet.Expr`
+  is already a free-variable set paired with an evaluation function, so supplying the new
+  fields there is mechanical.
+- **C. A syntactic mCRL2 fragment** — an inductive term language, sort and action
+  declarations, and a printer. Worth it only if the goal is a verified translator, and even
+  then the third reading bottoms out in a round trip that has to be tested rather than
+  proved.
+
+Independently of that choice, emitting the LPE of `Examples/CounterNetLPE.lean` as mCRL2 text
+and checking that `mcrl22lps` accepts it is cheap. It proves nothing, but it is the only
+check named here that tests the translation against the actual tool.
 
 ---
 
