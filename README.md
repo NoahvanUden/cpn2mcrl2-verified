@@ -17,6 +17,7 @@ formalisms it defines into a form that is easier to work from than the PDF.
 | --- | --- |
 | [`Thesis/Thesis.pdf`](Thesis/Thesis.pdf) | The thesis (76 pages) |
 | [`Thesis/docs/`](Thesis/docs) | Per-formalism notes extracted from the thesis |
+| [`Proof/`](Proof) | A Lean 4 / Mathlib formalization of the definitions in the notes |
 
 ### The notes
 
@@ -27,6 +28,7 @@ formalisms it defines into a form that is easier to work from than the PDF.
 | [`ColoredPetriNets.md`](Thesis/docs/ColoredPetriNets.md) | Petri Nets and Colored Petri Nets — syntax, semantics, reachability graph (Definitions 4–9) | Chapter 3 |
 | [`mCRL2.md`](Thesis/docs/mCRL2.md) | Linear Process Equations, the CPN→LPE translation, LPE semantics, the modal μ-calculus, tooling (Definitions 13–15, 18) | Chapters 5–6 |
 | [`Bisimiliarity.md`](Thesis/docs/Bisimiliarity.md) | Bisimulation, the relation between a CPN and its translation, and the soundness proof (Definitions 16–17, Theorem 1) | Chapter 5.3 |
+| [`LeanFormalization.md`](Thesis/docs/LeanFormalization.md) | How faithful the Lean formalization in [`Proof/`](Proof) is to these notes — remarks, deviations and gaps | — |
 
 Each file states the syntax and semantics of one formalism, keeps the thesis's definition
 numbering so anything can be traced back to the PDF, cross-links to the others, and ends with
