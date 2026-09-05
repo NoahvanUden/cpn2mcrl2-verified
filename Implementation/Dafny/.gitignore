@@ -1,0 +1,8 @@
+out/
+bin/
+obj/
+cpn2mcrl2
+cpn2mcrl2.exe
+cpn2mcrl2.dll
+cpn2mcrl2*.json
+cpn2mcrl2-cs/

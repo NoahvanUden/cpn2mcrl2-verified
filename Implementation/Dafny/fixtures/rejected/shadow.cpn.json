@@ -1,0 +1,8 @@
+{
+  "_comment": "Net.Valid.namesDisjoint: a place and a variable share a name, which the emitted specification would bind twice in one scope.",
+  "colors": { "Int": { "kind": "int" }, "Bool": { "kind": "bool" } },
+  "variables": { "p": "Int" },
+  "places": { "p": { "color": "Int", "init": ["emptyBag"] } },
+  "transitions": { "t": { "guard": ["bool", true] } },
+  "inArcs": [], "outArcs": []
+}

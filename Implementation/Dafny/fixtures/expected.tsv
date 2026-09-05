@@ -1,0 +1,8 @@
+# fixture     summands  params
+#
+# Summands after linearization must be exactly |T| + 1 -- one per transition, plus mCRL2's
+# delta -- and process parameters exactly |P|. Implementation/docs/Target.md 2:
+# "If not, what was emitted was not an LPE."
+counter        4         3
+multitoken     2         2
+jobs           2         2

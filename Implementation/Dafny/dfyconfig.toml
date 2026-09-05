@@ -1,0 +1,11 @@
+# The Dafny project file. `dafny verify .` and `dafny build .` from this directory pick up
+# every source under src/ with these options.
+#
+# standard-libraries is on for Std.Wrappers (Option and Result, used as the importer's error
+# monad) and Std.FileIO, which is how src/Main.dfy reads and writes files.
+
+[options]
+standard-libraries = true
+warn-shadowing = true
+
+includes = ["src/**/*.dfy"]
