@@ -8,3 +8,4 @@ import Cpn2mCrl2.Lpe
 import Cpn2mCrl2.Translate
 import Cpn2mCrl2.Correct
 import Cpn2mCrl2.Print
+import Cpn2mCrl2.Json
