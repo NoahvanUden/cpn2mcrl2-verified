@@ -82,6 +82,29 @@ theorem eval_wf : ∀ {τ : ExprTy} (e : Expr τ) {env : Env}, env.WfOn e.freeVa
       have hb := eval_wf b fun p hp => h p (List.mem_append_right _ hp)
       simp only [Bag.ofColor, Union.union, Bag.union, List.all_append, Bool.and_eq_true]
       exact ⟨ha, hb⟩
+  | _, .nilList _, _, _ => rfl
+  | _, .snoc l e, _, h => by
+      have hl := eval_wf l fun p hp => h p (List.mem_append_left _ hp)
+      have he := eval_wf e fun p hp => h p (List.mem_append_right _ hp)
+      show ((eval l _ ++ [eval e _]).all fun v => v.ofColor _) = true
+      simp only [List.all_append, Bool.and_eq_true, List.all_cons, List.all_nil, Bool.and_true]
+      exact ⟨hl, he⟩
+  | _, .appendList a b, _, h => by
+      have ha := eval_wf a fun p hp => h p (List.mem_append_left _ hp)
+      have hb := eval_wf b fun p hp => h p (List.mem_append_right _ hp)
+      show ((eval a _ ++ eval b _).all fun v => v.ofColor _) = true
+      simp only [List.all_append, Bool.and_eq_true]
+      exact ⟨ha, hb⟩
+  | _, .rmList e l, _, h => by
+      have hl := eval_wf l fun p hp => h p (List.mem_append_right _ hp)
+      show ((eraseFirst (eval l _) (eval e _)).all fun v => v.ofColor _) = true
+      exact List.all_eq_true.2 fun v hv => List.all_eq_true.1 hl v (mem_of_mem_eraseFirst hv)
+  | _, .diffList a b, _, h => by
+      have ha := eval_wf a fun p hp => h p (List.mem_append_left _ hp)
+      show ((listDiff (eval a _) (eval b _)).all fun v => v.ofColor _) = true
+      exact List.all_eq_true.2 fun v hv => List.all_eq_true.1 ha v (mem_of_mem_listDiff hv)
+  | _, .inList _ _, _, _ => rfl
+  | _, .subList _ _, _, _ => rfl
   | _, .bagDiff a b, _, h => by
       have ha := eval_wf a fun p hp => h p (List.mem_append_left _ hp)
       show Bag.ofColor (eval a _ \ eval b _) _ = true

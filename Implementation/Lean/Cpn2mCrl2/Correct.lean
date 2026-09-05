@@ -152,6 +152,7 @@ theorem eval_toEnv (h : N.Valid) {τ : ExprTy} {e : Expr τ} (hs : Expr.ScopedIn
   cases τ' with
   | color c => rfl
   | bag c => simp [ExprTy.isColor] at hc
+  | list c => simp [ExprTy.isColor] at hc
 
 theorem holds_toEnv (h : N.Valid) {e : Expr (.color .bool)} (hs : Expr.ScopedIn N.vars e)
     (M : Marking) (b : Env) : Expr.Holds e (M.toEnv b) ↔ Expr.Holds e b := by

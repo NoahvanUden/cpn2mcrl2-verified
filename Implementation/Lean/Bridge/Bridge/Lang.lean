@@ -191,6 +191,7 @@ noncomputable def envOfBinding (N : Net) (V : Set String) (b : Bindings Val N.va
     Env
   | .color c, x => if h : x ∈ V then (b ⟨x, h⟩).1 else c.junk
   | .bag _, _ => ∅
+  | .list _, _ => []
 
 theorem envOfBinding_color {N : Net} {V : Set String} (b : Bindings Val N.varTypeOf V)
     {x : String} (hx : x ∈ V) (c : Color) :

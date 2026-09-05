@@ -69,10 +69,13 @@ constructors `Proof/CommonDefinitions.lean` gives it, rather than gaining the pr
 `Thesis/docs/LeanFormalization.md` §5.1 expects.
 
 The two halves cannot collide: a net's own variables are all color-sorted
-(`Net.Valid.varsAreColors`), so a bag-sorted variable is always a place. -/
+(`Net.Valid.varsAreColors`), so a bag-sorted variable is always a place. The list sort plays
+no part here -- it belongs to the second backend, and `Cpn2mCrl2/ListEncoding.lean` has its own
+environment for it. -/
 def Marking.toEnv (M : Marking) (b : Env) : Env
   | .color c, x => b (.color c) x
   | .bag _, x => M x
+  | .list _, _ => []
 
 @[simp] theorem Marking.toEnv_color (M : Marking) (b : Env) (c : Color) (x : String) :
     M.toEnv b (.color c) x = b (.color c) x := rfl

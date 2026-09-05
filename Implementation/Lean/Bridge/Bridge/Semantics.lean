@@ -89,6 +89,7 @@ theorem eval_evalOn {N : Net} (h : N.Valid) (t : N.TIdx) (b : (N.toCPN h).TransB
     rw [Bridge.envOfBinding_color (fun v => b ⟨v.1, hsub v.2⟩) hx1 c,
       Bridge.envOfBinding_color b (hsub hx1) c]
   | bag c => rfl
+  | list c => rfl
 
 theorem consumedBy_coeff {N : Net} (h : N.Valid) (t : N.TIdx)
     (b : (N.toCPN h).TransBinding t) (p : N.PIdx) (hp : (p, t) ∈ N.cpnInArc)

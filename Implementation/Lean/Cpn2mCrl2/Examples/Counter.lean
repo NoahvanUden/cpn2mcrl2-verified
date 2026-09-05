@@ -82,6 +82,7 @@ def bind (n : Int) : Env
   | .color .int, _ => .int n
   | .color c, _ => c.junk
   | .bag _, _ => ∅
+  | .list _, _ => []
 
 /-! ## Examples 4 and 5: the seven-state chain
 

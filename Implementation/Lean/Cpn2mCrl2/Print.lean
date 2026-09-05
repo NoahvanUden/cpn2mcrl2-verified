@@ -99,6 +99,17 @@ def sortName : Color → String
 def sortRef : ExprTy → String
   | .color c => sortName c
   | .bag c => "Bag(" ++ sortName c ++ ")"
+  | .list c => "List(" ++ sortName c ++ ")"
+
+/-- The name of the `rm` map for a color. mCRL2 has no polymorphic user-defined maps, so the
+three list operations the second backend needs are declared once per color. -/
+def rmName (c : Color) : String := "rm_" ++ sortName c
+
+/-- The name of the multiset-difference map for a color. -/
+def diffName (c : Color) : String := "diff_" ++ sortName c
+
+/-- The name of the multiset-inclusion map for a color. -/
+def subName (c : Color) : String := "sub_" ++ sortName c
 
 mutual
 
@@ -173,6 +184,13 @@ def printExpr : {τ : ExprTy} → Expr τ → String
   | _, .bagUnion a b => "(" ++ printExpr a ++ " + " ++ printExpr b ++ ")"
   | _, .bagDiff a b => "(" ++ printExpr a ++ " - " ++ printExpr b ++ ")"
   | _, .bagSubset a b => "(" ++ printExpr a ++ " <= " ++ printExpr b ++ ")"
+  | _, .nilList _ => "[]"
+  | _, .snoc l e => "(" ++ printExpr l ++ " <| " ++ printExpr e ++ ")"
+  | _, .appendList a b => "(" ++ printExpr a ++ " ++ " ++ printExpr b ++ ")"
+  | _, @Expr.rmList c e l => rmName c ++ "(" ++ printExpr e ++ ", " ++ printExpr l ++ ")"
+  | _, @Expr.diffList c a b => diffName c ++ "(" ++ printExpr a ++ ", " ++ printExpr b ++ ")"
+  | _, .inList e l => "(" ++ printExpr e ++ " in " ++ printExpr l ++ ")"
+  | _, @Expr.subList c a b => subName c ++ "(" ++ printExpr a ++ ", " ++ printExpr b ++ ")"
 
 /-- `printExpr`, one record field at a time. -/
 def printArgs : {fs : ColorFields} → Args fs → List String

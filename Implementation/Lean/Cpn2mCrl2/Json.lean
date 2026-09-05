@@ -167,6 +167,7 @@ partial def checkExpr (vars : Ctx) (colors : List Color) (j : Json) :
     else coerceTo vars colors j (.color (.record n fs))
   | .color .bool => coerceTo vars colors j (.color .bool)
   | .color .int => coerceTo vars colors j (.color .int)
+  | .list _ => .error "the input format has no list sort; lists belong to the second backend"
 
 /-- Infer the sort of an expression and require it to be the expected one. -/
 partial def coerceTo (vars : Ctx) (colors : List Color) (j : Json) (τ : ExprTy) :
@@ -226,7 +227,7 @@ partial def inferExpr (vars : Ctx) (colors : List Color) (j : Json) :
     match (← inferExpr vars colors (← idx a 1 "equality")) with
     | ⟨.color c, x⟩ =>
       return ⟨.color .bool, .eq x (← checkExpr vars colors rhs (.color c))⟩
-    | ⟨.bag _, _⟩ => .error "equality compares values, not bags"
+    | _ => .error "equality compares values, not bags or lists"
   | "proj" =>
     let f ← (← idx a 2 "projection").getStr?
     match (← inferExpr vars colors (← idx a 1 "projection")) with
@@ -260,12 +261,12 @@ partial def inferExpr (vars : Ctx) (colors : List Color) (j : Json) :
     let s ← inferExpr vars colors (← idx p 1 "bag item")
     match s.1 with
     | .color c => return ⟨.bag c, ← checkExpr vars colors j (.bag c)⟩
-    | .bag _ => .error "a bag cannot hold bags"
+    | _ => .error "a bag cannot hold bags or lists"
   | "union" | "diff" =>
     let s ← inferExpr vars colors (← idx a 1 hd)
     match s.1 with
     | .bag c => return ⟨.bag c, ← checkExpr vars colors j (.bag c)⟩
-    | .color _ => .error s!"{hd} takes bags"
+    | _ => .error s!"{hd} takes bags"
   | "emptyBag" =>
     .error "the empty bag needs a known color; write it where the sort is expected"
   | k => .error s!"unknown expression form {k}"
