@@ -1,0 +1,24 @@
+name = "Bridge"
+version = "0.1.0"
+defaultTargets = ["Bridge"]
+
+# The dependencies of Proof/ -- Mathlib and its own -- are shared with Proof/ rather than
+# cloned a second time. Both directories are gitignored, so this only decides where the
+# download lands; building either warms the other.
+packagesDir = "../../../Proof/.lake/packages"
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "Cpn2mCrl2"
+path = ".."
+
+[[require]]
+name = "Proof"
+path = "../../../Proof"
+
+[[lean_lib]]
+name = "Bridge"
