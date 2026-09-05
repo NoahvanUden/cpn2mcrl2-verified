@@ -1,0 +1,15 @@
+name = "Cpn2mCrl2"
+version = "0.1.0"
+defaultTargets = ["Cpn2mCrl2", "cpn2mcrl2"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[lean_lib]]
+name = "Cpn2mCrl2"
+
+[[lean_exe]]
+name = "cpn2mcrl2"
+root = "Main"
