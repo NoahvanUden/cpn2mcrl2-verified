@@ -55,10 +55,18 @@ M1 was skipped rather than done: the plan puts an unverified OCaml prototype fir
 oracle, and the Lean translator arrived before anything needed one. That leaves the M4 and M5
 comparison without the differential oracle M1 was to provide.
 
-Not done: the mechanical composition of T2 with Theorem 1, which
-[`Languages.md`](Languages.md) §3 makes the reason Lean is first — the argument holds but no
-Lean term connects the two developments. Nor the list backend and the refinement of
-[`Plan.md`](Plan.md) §5, which is M6. Both are set out in
+The composition of T2 with Theorem 1 — which [`Languages.md`](Languages.md) §3 makes the
+reason Lean is first — is now a Lean term and not an argument in prose:
+`Net.bisimilar_reachabilityGraph_emitted` in
+[`Implementation/Lean/Bridge/`](../Lean/Bridge), a second, proof-only package so that the
+translator itself stays Mathlib-free. For a CPN that passes the T1 validation, the
+reachability graph of Definition 9 and the LTS denoted by the emitted specification are
+bisimilar. Building it also found two places where the translator was less faithful than the
+thesis — bindings were not typed, and type soundness assumed an unsatisfiable hypothesis —
+both now fixed; see [`Implementation/Lean/README.md`](../Lean/README.md) §4.4.
+
+Not done: the list backend and the refinement of [`Plan.md`](Plan.md) §5, which is M6, and the
+PNML importers of M7. Both are set out in
 [`Implementation/Lean/README.md`](../Lean/README.md) §5.
 
 Before any of that, M0's hand-written check that the target syntax is real: Example 9 of

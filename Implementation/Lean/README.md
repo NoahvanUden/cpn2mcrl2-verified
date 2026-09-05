@@ -2,10 +2,14 @@
 
 Milestone M3 of [`Implementation/docs/Plan.md`](../docs/Plan.md): a Colored Petri Net goes in
 as a file, an mCRL2 specification comes out as text, and the term it prints is *proved* to
-denote the $c_t$ and $g_t$ of Definition 14.
+denote the $c_t$ and $g_t$ of Definition 14 — and, composed with Theorem 1, to denote an LTS
+bisimilar to the CPN's reachability graph.
 
-The package is self-contained. It does not depend on [`Proof/`](../../Proof) and it does not
-depend on Mathlib; see [§5](#5-what-is-not-here) for what that costs.
+There are two Lake packages here, and the split is the point.
+[`Cpn2mCrl2/`](Cpn2mCrl2) is the translator: no Mathlib, no dependency on
+[`Proof/`](../../Proof), and a clean build in about fifteen seconds.
+[`Bridge/`](Bridge) is proof only, produces no code, and depends on both — it is what makes
+the composition with Theorem 1 a Lean term rather than an argument in prose.
 
 ---
 
@@ -15,6 +19,13 @@ depend on Mathlib; see [§5](#5-what-is-not-here) for what that costs.
 cd Implementation/Lean
 lake build
 .lake/build/bin/cpn2mcrl2 fixtures/counter.cpn.json
+```
+
+The bridge is a separate package and is built separately. It needs Mathlib, which it shares
+with [`Proof/`](../../Proof) rather than downloading twice:
+
+```bash
+cd Implementation/Lean/Bridge && lake build
 ```
 
 That fixture is Example 3, and the output is Example 9:
@@ -65,7 +76,18 @@ The chain of [`Plan.md`](../docs/Plan.md) §2, left to right.
 | [`Cpn2mCrl2/Print.lean`](Cpn2mCrl2/Print.lean) | the mCRL2 encoding of [`Target.md`](../docs/Target.md) §1 | — |
 | [`Cpn2mCrl2/Json.lean`](Cpn2mCrl2/Json.lean) | the importer — **outside the trust boundary** | T1 |
 | [`Main.lean`](Main.lean) | the command line | — |
-| [`Examples/Counter.lean`](Examples/Counter.lean) | Examples 3, 4, 5 and 9, checked | — |
+| [`Cpn2mCrl2/Examples/Counter.lean`](Cpn2mCrl2/Examples/Counter.lean) | Examples 3, 4, 5 and 9, checked | — |
+
+And the bridge, which nothing above depends on:
+
+| File | What it holds |
+| --- | --- |
+| [`Bridge/Bridge/Lang.lean`](Bridge/Bridge/Lang.lean) | the concrete language as one of `Proof/`'s `ExprLang`s |
+| [`Bridge/Bridge/Cpn.lean`](Bridge/Bridge/Cpn.lean) | a validated `Net` as a `Proof/` `CPN` |
+| [`Bridge/Bridge/Vars.lean`](Bridge/Bridge/Vars.lean) | arcs against index pairs, and the two readings of $\mathrm{Var}(t)$ |
+| [`Bridge/Bridge/Semantics.lean`](Bridge/Bridge/Semantics.lean) | Definitions 6 and 7 on both sides |
+| [`Bridge/Bridge/Soundness.lean`](Bridge/Bridge/Soundness.lean) | **T2 composed with Theorem 1** |
+| [`Bridge/Bridge/Example.lean`](Bridge/Bridge/Example.lean) | the whole chain, on Example 3 |
 
 ---
 
@@ -79,6 +101,18 @@ The three theorems in [`Correct.lean`](Cpn2mCrl2/Correct.lean), for any net sati
 | `Net.toLpe_cond` | the emitted condition holds under a marking and a binding exactly when Definition 6 says the binding element is enabled |
 | `Net.toLpe_next` | the emitted next-state term for a place evaluates to the bag Definition 7 leaves there |
 | `Net.toLpe_step` | consequently, the two transition relations agree |
+
+and, in [`Bridge/`](Bridge), the one they compose into:
+
+| | |
+| --- | --- |
+| `Net.bisimilar_reachabilityGraph_emitted` | for a CPN that passes the T1 validation, the reachability graph of Definition 9 and the LTS denoted by the specification the translator emits are bisimilar |
+
+That is what [`Plan.md`](../docs/Plan.md) §2 calls the theorem the project is for. Its
+left-hand side is `Proof/`'s, unchanged; its right-hand side is the denotation of `Net.toLpe`,
+the object [`Print.lean`](Cpn2mCrl2/Print.lean) prints; and between them stand
+`CPN.bisimulation_transRel` — Theorem 1 of the thesis — and `Net.toLpe_step`, which is T2.
+`Cpn2mCrl2.Examples.Counter.bisimilar_emitted` instantiates it on Example 3.
 
 [`Typing.lean`](Cpn2mCrl2/Typing.lean) adds one property that nothing else depends on but that
 is the reason to believe `Expr.eval` is the semantics it is meant to be: under a well-typed
@@ -116,7 +150,7 @@ $\textit{Bool}$-valued term rather than a proposition.
 
 ---
 
-## 4. Three design decisions
+## 4. Four design decisions
 
 ### 4.1 The product former is avoided rather than added
 
@@ -166,22 +200,38 @@ that, and [`fixtures/jobs.cpn.json`](fixtures/jobs.cpn.json) exercises it.
 
 ---
 
+### 4.4 What the bridge cost, and what it found
+
+Composing with Theorem 1 means exhibiting the concrete language as one of the languages
+`Proof/` quantifies over, and a validated `Net` as a `Proof/` `CPN`. Four things had to be
+reconciled, and each is a place where a decision on one side meets a decision on the other.
+
+| | |
+| --- | --- |
+| **Values** | `ExprLang.val` must satisfy `val boolColor ≃ Bool`, so it cannot be all of `Value`; it is the values *of* a color, a subtype. That is why [`Typing.lean`](Cpn2mCrl2/Typing.lean) had to exist first — building the `ExprLang`'s `eval` at all needs evaluation to preserve sorts |
+| **Bindings** | `Proof/` types a binding by construction, we type it with a separate `Env.WfOn`. `Expr.eval_congr` — obligation 4 again — is what makes the round trip invisible to any expression scoped where it should be |
+| **Bags** | `Proof/`'s bag over a place holds only tokens of that place's color; ours holds any `Value`. `Bag.coeff_eq_zero_of_not_ofColor` closes the gap, and it needs type soundness to do it |
+| **Quantifiers** | Definition 6 ranges over the places of $pre(t)$ and ours over the arcs into $t$; matching them is where `Net.Valid.inArcsNodup` and `placesNodup` earn their place |
+
+Building it also found two places where the translator was *less* faithful than the thesis, and
+both are now fixed in the core rather than papered over in the bridge:
+
+- **Bindings were not typed.** Definition 2 types a binding — $b \in B(t)$ assigns each
+  variable a value of *its own* type — and `Net.step` and `Lpe.step` quantified over arbitrary
+  environments. That is more than Definition 15 allows, and more than mCRL2's `sum v : S`
+  allows. Both now carry `Env.WfOn` on the binder.
+- **Type soundness assumed too much.** `Expr.eval_wf` was stated for `Env.Wf`, well-typedness
+  at every variable of every sort — which is not satisfiable, because `Env` is total and an
+  enumeration with no constructors has no value for the junk environment to hold. It is now
+  stated for `Env.WfOn e.freeVars`, which is what a binding of Definition 2 actually gives.
+
+Finding those is what the exercise is for. [`Plan.md`](../docs/Plan.md) §1 says the gap is that
+"nothing here connects the Lean to the translation as it is actually implemented"; connecting
+them is what made the two slips visible.
+
+---
+
 ## 5. What is not here
-
-**The composition with Theorem 1 is not mechanized.** This is the one real gap.
-[`Languages.md`](../docs/Languages.md) §3 makes it the reason Lean is translator #1:
-
-> In Lean the translator's correctness theorem composes directly with `CPN.bisimulation_transRel`; nowhere else does it.
-
-The composition holds mathematically — T2 here, T3 in [`Proof/`](../../Proof) — but no Lean
-term connects them, because `Proof/` states everything over an abstract `ExprLang` and needs
-Mathlib, and this package is Mathlib-free so that the trust boundary and the binary stay small.
-Closing it is a bridge module that would: instantiate `ExprLang` with `Color`, `Value` and
-`Expr`; relate `Bag` here to `Proof`'s `Bag S := S → ℕ` through `Bag.coeff`; build a
-`CPN L P T` from a `Net` and its `Net.Valid`; and show `CPN.Enabled` and `CPN.fire` agree with
-`Net.Enabled` and `Net.fire`. Then `CPN.bisimulation_transRel` applies and
-`Net.toLpe_step` composes with it. Every definition here is named to line up with `Proof/` so
-that this is instantiation rather than redesign.
 
 **The list backend, and the refinement it needs.** Milestone M6.
 [`Plan.md`](../docs/Plan.md) §5 is explicit that the bag translator comes first and that the
