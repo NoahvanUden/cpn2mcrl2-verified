@@ -148,7 +148,7 @@ declared color. -/
 def Value.ofColor : Value → Color → Bool
   | .bool _, .bool => true
   | .int _, .int => true
-  | .ctor id, .enum _ ids => ids.contains id
+  | .ctor id, .enum _ ids => decide (id ∈ ids)
   | .record vs, .record _ fs => ValueFields.ofColorFields vs fs
   | _, _ => false
 
@@ -160,10 +160,45 @@ def ValueFields.ofColorFields : ValueFields → ColorFields → Bool
 
 end
 
+/-- Looking a field up in a well-typed record value finds it, at the color the record's own
+type gives it.
+
+This is what `Cpn2mCrl2/Typing.lean` needs to show that `Expr.proj` never reaches
+`Color.junk`. -/
+theorem ValueFields.lookup_ofColorFields :
+    ∀ {vs : ValueFields} {fs : ColorFields}, ValueFields.ofColorFields vs fs = true →
+      ∀ {f : String} {c : Color}, fs.lookup f = some c →
+        ∃ v, vs.lookup f = some v ∧ v.ofColor c = true
+  | .nil, .nil, _, _, _, hf => absurd hf (by simp [ColorFields.lookup])
+  | .nil, .cons _ _ _, hwf, _, _, _ => absurd hwf (by simp [ValueFields.ofColorFields])
+  | .cons _ _ _, .nil, hwf, _, _, _ => absurd hwf (by simp [ValueFields.ofColorFields])
+  | .cons n v vs, .cons n' c' fs', hwf, f, c, hf => by
+    simp only [ValueFields.ofColorFields, Bool.and_eq_true, beq_iff_eq] at hwf
+    obtain ⟨⟨hn, hv⟩, hrest⟩ := hwf
+    subst hn
+    by_cases hnf : n = f
+    · rw [ColorFields.lookup, ite_eq_left_of_eq_true _ _ (by simp [hnf])] at hf
+      refine ⟨v, by rw [ValueFields.lookup, ite_eq_left_of_eq_true _ _ (by simp [hnf])], ?_⟩
+      rw [← Option.some.inj hf]; exact hv
+    · rw [ColorFields.lookup, ite_eq_right_of_eq_false _ _ (by simp [hnf])] at hf
+      obtain ⟨w, hw, hwc⟩ := ValueFields.lookup_ofColorFields hrest hf
+      exact ⟨w, by rw [ValueFields.lookup, ite_eq_right_of_eq_false _ _ (by simp [hnf])]; exact hw, hwc⟩
+
+/-- A well-typed value of a record color is a record value whose fields are well-typed. -/
+theorem Value.eq_record_of_ofColor {v : Value} {n : String} {fs : ColorFields}
+    (h : v.ofColor (.record n fs) = true) :
+    ∃ vs, v = .record vs ∧ ValueFields.ofColorFields vs fs = true := by
+  cases v with
+  | record vs => exact ⟨vs, rfl, h⟩
+  | bool _ => exact absurd h (by simp [Value.ofColor])
+  | int _ => exact absurd h (by simp [Value.ofColor])
+  | ctor _ => exact absurd h (by simp [Value.ofColor])
+
 /-- A value of the color `c`, used as the result of an evaluation that typing rules out.
 
 `Expr.eval` is total, so the projection of a field that a value does not carry has to return
-something; `Expr.eval_ofColor` shows the case never arises for a well-typed environment. -/
+something; `Expr.eval_wf` of `Cpn2mCrl2/Typing.lean` proves the case never arises for a
+well-typed environment. -/
 def Color.junk : Color → Value
   | .bool => .bool false
   | .int => .int 0

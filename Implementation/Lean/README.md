@@ -56,6 +56,7 @@ The chain of [`Plan.md`](../docs/Plan.md) §2, left to right.
 | [`Cpn2mCrl2/Color.lean`](Cpn2mCrl2/Color.lean) | the color grammar of [`InputFormat.md`](../docs/InputFormat.md) §4.1, and values | — |
 | [`Cpn2mCrl2/Bag.lean`](Cpn2mCrl2/Bag.lean) | Definition 1, finitely supported | — |
 | [`Cpn2mCrl2/Expr.lean`](Cpn2mCrl2/Expr.lean) | `EXPR`, intrinsically typed, and **obligation 4** | — |
+| [`Cpn2mCrl2/Typing.lean`](Cpn2mCrl2/Typing.lean) | evaluation preserves sorts | — |
 | [`Cpn2mCrl2/Net.lean`](Cpn2mCrl2/Net.lean) | Definitions 4 and 5, and `Net.Valid` | T1 |
 | [`Cpn2mCrl2/Semantics.lean`](Cpn2mCrl2/Semantics.lean) | Definitions 6 to 9 — the reference side | — |
 | [`Cpn2mCrl2/Lpe.lean`](Cpn2mCrl2/Lpe.lean) | Definitions 13 and 15, syntactically | — |
@@ -78,6 +79,11 @@ The three theorems in [`Correct.lean`](Cpn2mCrl2/Correct.lean), for any net sati
 | `Net.toLpe_cond` | the emitted condition holds under a marking and a binding exactly when Definition 6 says the binding element is enabled |
 | `Net.toLpe_next` | the emitted next-state term for a place evaluates to the bag Definition 7 leaves there |
 | `Net.toLpe_step` | consequently, the two transition relations agree |
+
+[`Typing.lean`](Cpn2mCrl2/Typing.lean) adds one property that nothing else depends on but that
+is the reason to believe `Expr.eval` is the semantics it is meant to be: under a well-typed
+environment an expression of sort `τ` evaluates to a value of sort `τ`, so the `Color.junk`
+fallback of `Expr.proj` is unreachable and `Value.asInt` and friends never misread a value.
 
 `Proof/MCRL2.lean` proves the first two by `rfl`, and
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 explains why that carries
@@ -183,11 +189,6 @@ list encoding is "exactly as justified as the reference implementation's, which 
 at all". [`fixtures/multitoken.cpn.json`](fixtures/multitoken.cpn.json) is the net
 [`Target.md`](../docs/Target.md) §4.1 asks for, so that when the second backend exists the
 comparison is one `ltscompare` away.
-
-**Type soundness of `Expr.eval`.** `Value` is untyped, so `eval` falls back on `Color.junk`
-where a subexpression has the wrong shape. Nothing depends on it — the T2 theorems compare two
-uses of the same `eval` — but the statement that a well-typed environment never reaches those
-branches is worth having and is not proved.
 
 **T0 and T4 are tested, never proved.** [`Plan.md`](../docs/Plan.md) §2 calls this "the honest
 ceiling": whether `mcrl22lps` accepts the text, and whether what it reads back denotes the term

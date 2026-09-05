@@ -56,8 +56,8 @@ sort-and-name pair, which is what removes membership proofs from `Expr.eval`. De
 expression can see.
 
 **Junk values.** `Value` is untyped, so `eval` has to give an answer when a subexpression
-evaluates to the wrong shape -- `Value.asInt` and friends supply one. `Cpn2mCrl2/Typing.lean`
-shows the case never arises when the environment is well-typed.
+evaluates to the wrong shape -- `Value.asInt` and friends supply one.
+`Cpn2mCrl2/Typing.lean` proves the case never arises when the environment is well-typed.
 
 ## Main definitions
 
