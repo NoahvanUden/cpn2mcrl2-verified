@@ -157,6 +157,17 @@ theorem entryCoeff_map (ks : List Value) (f : Value → Nat) (v : Value)
     show entryCoeff (m₁ \ m₂).entries v = _
     rw [hd, entryCoeff_eq_zero_of_not_mem _ _ h₂, h₁, Nat.zero_sub]
 
+/-- A bag well-typed for `c` has coefficient zero at every value that is not of color `c`.
+
+This is what lets a bag over all of `Value` be compared with a bag over the values *of one
+color*, which is how `Cpn2mCrl2/Bridge` relates a marking here to a marking of
+`Proof/ColoredPetriNets.lean`. -/
+theorem coeff_eq_zero_of_not_ofColor {m : Bag} {c : Color} (hm : m.ofColor c = true)
+    {v : Value} (hv : v.ofColor c ≠ true) : m.coeff v = 0 := by
+  refine entryCoeff_eq_zero_of_not_mem _ _ fun hmem => hv ?_
+  obtain ⟨e, he, rfl⟩ := List.mem_map.1 hmem
+  exact List.all_eq_true.1 hm e he
+
 /-! ### Inclusion -/
 
 @[simp] theorem subset_def {m₁ m₂ : Bag} : m₁ ⊆ m₂ ↔ ∀ v, m₁.coeff v ≤ m₂.coeff v := Iff.rfl

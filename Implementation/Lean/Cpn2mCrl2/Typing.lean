@@ -36,10 +36,16 @@ namespace Expr
 
 mutual
 
-/-- Under a well-typed environment, an expression of sort `τ` evaluates to a value of
-sort `τ`. -/
-theorem eval_wf : ∀ {τ : ExprTy} (e : Expr τ) {env : Env}, env.Wf → τ.Wf (eval e env)
-  | _, .var x τ, _, h => h τ x
+/-- Under an environment well-typed on its free variables, an expression of sort `τ`
+evaluates to a value of sort `τ`.
+
+The hypothesis is `Env.WfOn e.freeVars` rather than `Env.Wf` because `Env.Wf` is too strong to
+be satisfiable: `Env` is total, and an enumeration with no constructors has no value for the
+junk environment to hold. `Cpn2mCrl2/Bridge` needs exactly this form, since a binding of
+Definition 2 constrains only the variables it binds. -/
+theorem eval_wf : ∀ {τ : ExprTy} (e : Expr τ) {env : Env}, env.WfOn e.freeVars →
+    τ.Wf (eval e env)
+  | _, .var x τ, _, h => h (x, τ) (List.mem_singleton.2 rfl)
   | _, .intLit _, _, _ => rfl
   | _, .boolLit _, _, _ => rfl
   | _, .ctorLit _ _ _ hm, _, _ => by
@@ -72,12 +78,12 @@ theorem eval_wf : ∀ {τ : ExprTy} (e : Expr τ) {env : Env}, env.Wf → τ.Wf 
       exact he
   | _, .bagUnion a b, _, h => by
       show Bag.ofColor (eval a _ ∪ eval b _) _ = true
-      have ha := eval_wf a h
-      have hb := eval_wf b h
+      have ha := eval_wf a fun p hp => h p (List.mem_append_left _ hp)
+      have hb := eval_wf b fun p hp => h p (List.mem_append_right _ hp)
       simp only [Bag.ofColor, Union.union, Bag.union, List.all_append, Bool.and_eq_true]
       exact ⟨ha, hb⟩
   | _, .bagDiff a b, _, h => by
-      have ha := eval_wf a h
+      have ha := eval_wf a fun p hp => h p (List.mem_append_left _ hp)
       show Bag.ofColor (eval a _ \ eval b _) _ = true
       simp only [Bag.ofColor, SDiff.sdiff, Bag.diff, List.all_eq_true, List.mem_map]
       rintro e ⟨v, hv, rfl⟩
@@ -86,24 +92,25 @@ theorem eval_wf : ∀ {τ : ExprTy} (e : Expr τ) {env : Env}, env.Wf → τ.Wf 
       exact List.all_eq_true.1 ha p hp
 
 /-- `Expr.eval_wf`, one record field at a time. -/
-theorem Args.eval_wf : ∀ {fs : ColorFields} (args : Args fs) {env : Env}, env.Wf →
-    ValueFields.ofColorFields (Args.eval args env) fs = true
+theorem Args.eval_wf : ∀ {fs : ColorFields} (args : Args fs) {env : Env},
+    env.WfOn (Args.freeVars args) → ValueFields.ofColorFields (Args.eval args env) fs = true
   | _, .nil, _, _ => rfl
   | _, .cons e rest, _, h => by
       show ValueFields.ofColorFields (.cons _ (eval e _) (Args.eval rest _)) (.cons _ _ _) = true
       simp only [ValueFields.ofColorFields, Bool.and_eq_true, beq_self_eq_true, true_and]
-      exact ⟨eval_wf e h, Args.eval_wf rest h⟩
+      exact ⟨eval_wf e fun p hp => h p (List.mem_append_left _ hp),
+        Args.eval_wf rest fun p hp => h p (List.mem_append_right _ hp)⟩
 
 end
 
 /-- Evaluation at a color sort: the value really is of that color, so `Value.asInt`,
 `Value.asBool` and `Value.asRecord` never fall back. -/
-theorem eval_ofColor {c : Color} (e : Expr (.color c)) {env : Env} (h : env.Wf) :
-    (eval e env).ofColor c = true := eval_wf e h
+theorem eval_ofColor {c : Color} (e : Expr (.color c)) {env : Env}
+    (h : env.WfOn e.freeVars) : (eval e env).ofColor c = true := eval_wf e h
 
 /-- Evaluation at a bag sort: every item of the bag is of the color. -/
-theorem eval_bag_ofColor {c : Color} (e : Expr (.bag c)) {env : Env} (h : env.Wf) :
-    (eval e env).ofColor c = true := eval_wf e h
+theorem eval_bag_ofColor {c : Color} (e : Expr (.bag c)) {env : Env}
+    (h : env.WfOn e.freeVars) : (eval e env).ofColor c = true := eval_wf e h
 
 end Expr
 

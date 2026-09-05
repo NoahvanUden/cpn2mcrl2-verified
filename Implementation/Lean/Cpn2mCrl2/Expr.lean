@@ -155,6 +155,21 @@ def Env.junk : Env
 /-- An environment is well-typed when every variable holds a value of its own sort. -/
 def Env.Wf (env : Env) : Prop := ∀ (τ : ExprTy) (x : String), τ.Wf (env τ x)
 
+/-- An environment is well-typed *on `Γ`* when every variable of `Γ` holds a value of the sort
+`Γ` gives it.
+
+This, and not `Env.Wf`, is Definition 2's `B[V]`: a binding assigns a value of `Type[v]` to
+each `v ∈ V` and says nothing about anything else. It is also the only form that is usable,
+because `Env` is total and `Color.junk` is not a value of every color -- an enumeration with no
+constructors has none at all. -/
+def Env.WfOn (Γ : Ctx) (env : Env) : Prop := ∀ p ∈ Γ, p.2.Wf (env p.2 p.1)
+
+theorem Env.WfOn.mono {Γ Δ : Ctx} (hsub : ∀ p ∈ Γ, p ∈ Δ) {env : Env} (h : env.WfOn Δ) :
+    env.WfOn Γ := fun p hp => h p (hsub p hp)
+
+theorem Env.Wf.wfOn {env : Env} (h : env.Wf) (Γ : Ctx) : env.WfOn Γ :=
+  fun p _ => h p.2 p.1
+
 /-! ## Expressions -/
 
 mutual

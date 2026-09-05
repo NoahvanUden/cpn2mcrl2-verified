@@ -122,11 +122,15 @@ def initMarking (L : Lpe) : Marking := fun p =>
 There is a transition `d -a_k→ d'` whenever some value of the summation variables satisfies
 the condition of summand `k` and takes `d` to `d'`.
 
+`sum v : S . p` binds `v` at the sort `S`, so the summation ranges over environments that are
+well-typed on the binder and not over arbitrary ones -- which is Definition 15's `b ∈ B[H_k]`,
+with `B` as Definition 2 defines it.
+
 The reached state is compared coefficient by coefficient, for the reason
 `Cpn2mCrl2/Semantics.lean` gives: a bag is its coefficient function, not the entry list that
 represents it. -/
 def step (L : Lpe) (M : Marking) (a : String) (M' : Marking) : Prop :=
-  ∃ S ∈ L.summands, S.act = a ∧ ∃ b : Env,
+  ∃ S ∈ L.summands, S.act = a ∧ ∃ b : Env, b.WfOn S.binder ∧
     S.condHolds M b ∧ ∀ p, Bag.Equiv (M' p) (S.nextMarking M b p)
 
 end Lpe

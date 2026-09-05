@@ -134,10 +134,15 @@ def Occurs (M : Marking) (t : TransDecl) (b : Env) (M' : Marking) : Prop :=
 
 /-! ### Definitions 8 and 9 -/
 
-/-- One transition `M -t→ M'` of the reachability graph of Definition 9: some binding makes
-`(t, b)` occur from `M` to `M'`. -/
+/-- One transition `M -t→ M'` of the reachability graph of Definition 9: some binding of `t`
+makes `(t, b)` occur from `M` to `M'`.
+
+The binding is quantified over `B(t)`, the bindings of `Var(t)` -- which by Definition 2
+assign to each variable a value of *its own type*, hence the `Env.WfOn`. `Net.Enabled` itself
+carries no such condition, because Definition 6 does not: it is a statement about a binding
+element, and which bindings exist is Definition 2's business. -/
 def step (M : Marking) (t : String) (M' : Marking) : Prop :=
-  ∃ d ∈ N.transitions, d.name = t ∧ ∃ b : Env, N.Occurs M d b M'
+  ∃ d ∈ N.transitions, d.name = t ∧ ∃ b : Env, b.WfOn (N.Var d) ∧ N.Occurs M d b M'
 
 /-- `M'` is directly reachable from `M`. -/
 def DirectlyReachable (M M' : Marking) : Prop := ∃ t, N.step M t M'

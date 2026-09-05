@@ -310,13 +310,13 @@ specification this program prints denotes an LTS bisimilar to the CPN's reachabi
 theorem toLpe_step (h : N.Valid) (M : Marking) (a : String) (M' : Marking) :
     N.toLpe.step M a M' ↔ N.step M a M' := by
   constructor
-  · rintro ⟨S, hS, hact, b, hcond, hnext⟩
+  · rintro ⟨S, hS, hact, b, hb, hcond, hnext⟩
     obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hS
-    refine ⟨t, ht, hact, b, ?_, fun p => ?_⟩
+    refine ⟨t, ht, hact, b, hb, ?_, fun p => ?_⟩
     · exact (toLpe_cond h t ht M b).1 hcond
     · exact Bag.Equiv.trans (hnext p) (nextMarking_equiv_fire h t M b p)
-  · rintro ⟨t, ht, hname, b, hen, hnext⟩
-    refine ⟨N.summandOf t, List.mem_map_of_mem ht, hname, b, ?_, fun p => ?_⟩
+  · rintro ⟨t, ht, hname, b, hb, hen, hnext⟩
+    refine ⟨N.summandOf t, List.mem_map_of_mem ht, hname, b, hb, ?_, fun p => ?_⟩
     · exact (toLpe_cond h t ht M b).2 hen
     · exact Bag.Equiv.trans (hnext p) (Bag.Equiv.symm (nextMarking_equiv_fire h t M b p))
 
