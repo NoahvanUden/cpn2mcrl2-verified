@@ -1,6 +1,6 @@
 name = "Cpn2mCrl2"
 version = "0.1.0"
-defaultTargets = ["Cpn2mCrl2", "cpn2mcrl2"]
+defaultTargets = ["Cpn2mCrl2", "Examples", "cpn2mcrl2"]
 
 [leanOptions]
 pp.unicode.fun = true
@@ -9,6 +9,10 @@ relaxedAutoImplicit = false
 
 [[lean_lib]]
 name = "Cpn2mCrl2"
+
+[[lean_lib]]
+name = "Examples"
+globs = ["Examples.+"]
 
 [[lean_exe]]
 name = "cpn2mcrl2"
