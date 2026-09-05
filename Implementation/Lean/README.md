@@ -1,9 +1,11 @@
 # Verified translator #1, Lean 4
 
-Milestone M3 of [`Implementation/docs/Plan.md`](../docs/Plan.md): a Colored Petri Net goes in
-as a file, an mCRL2 specification comes out as text, and the term it prints is *proved* to
-denote the $c_t$ and $g_t$ of Definition 14 — and, composed with Theorem 1, to denote an LTS
-bisimilar to the CPN's reachability graph.
+Milestones M3 and M6 of [`Implementation/docs/Plan.md`](../docs/Plan.md): a Colored Petri Net
+goes in as a file, an mCRL2 specification comes out as text, and the term it prints is *proved*
+to denote the $c_t$ and $g_t$ of Definition 14 — and, composed with Theorem 1, to denote an LTS
+bisimilar to the CPN's reachability graph. Both backends: one `Bag` per place, which is
+Definition 14 literally, and one `List` per place, which is seven times faster and is proved to
+refine it.
 
 There are two Lake packages here, and the split is the point.
 [`Cpn2mCrl2/`](Cpn2mCrl2) is the translator: no Mathlib, no dependency on
@@ -19,6 +21,35 @@ the composition with Theorem 1 a Lean term rather than an argument in prose.
 cd Implementation/Lean
 lake build
 .lake/build/bin/cpn2mcrl2 fixtures/counter.cpn.json
+```
+
+`--list` selects the second backend:
+
+```bash
+.lake/build/bin/cpn2mcrl2 --list fixtures/counter.cpn.json
+```
+
+```
+map rm_Int : Int # List(Int) -> List(Int);
+    diff_Int : List(Int) # List(Int) -> List(Int);
+    sub_Int : List(Int) # List(Int) -> Bool;
+var _x, _y : Int;
+    _l, _m : List(Int);
+eqn rm_Int(_x, []) = [];
+    rm_Int(_x, _y |> _l) = if(_x == _y, _l, _y |> rm_Int(_x, _l));
+    diff_Int(_l, []) = _l;
+    diff_Int(_l, _y |> _m) = diff_Int(rm_Int(_y, _l), _m);
+    sub_Int([], _m) = true;
+    sub_Int(_y |> _l, _m) = (_y in _m) && sub_Int(_l, rm_Int(_y, _m));
+
+act t1, t2, t3;
+
+proc Spec(p1 : List(Int), p2 : List(Int), p3 : List(Int)) =
+    sum h : Int . (sub_Int([h], p1) && true) -> t1 . Spec(diff_Int(p1, [h]), (p2 ++ [(h + 1)]), p3)
+  + sum h : Int . (sub_Int([h], p2) && (h <= 3)) -> t2 . Spec((p1 ++ [h]), diff_Int(p2, [h]), p3)
+  + sum h : Int . (sub_Int([h], p2) && (3 < h)) -> t3 . Spec(p1, diff_Int(p2, [h]), (p3 ++ [h]));
+
+init Spec([1], [], []);
 ```
 
 The bridge is a separate package and is built separately. It needs Mathlib, which it shares
@@ -51,9 +82,10 @@ The harness of [`Target.md`](../docs/Target.md) §4 needs mCRL2 on the machine:
 MCRL2_BIN=/path/to/mcrl2/bin bash scripts/check.sh
 ```
 
-It translates every fixture, feeds it to `mcrl22lps`, checks the summand and parameter counts,
-compares the LTS against a golden one with `ltscompare -ebisim`, and checks that every fixture
-under `fixtures/rejected/` is refused.
+It translates every fixture in *both* encodings, feeds each to `mcrl22lps`, checks the summand
+and parameter counts, compares the LTS against a golden one with `ltscompare -ebisim`, compares
+the two encodings against each other, and checks that every fixture under `fixtures/rejected/`
+is refused.
 
 ---
 
@@ -66,6 +98,7 @@ The chain of [`Plan.md`](../docs/Plan.md) §2, left to right.
 | [`Cpn2mCrl2/Util.lean`](Cpn2mCrl2/Util.lean) | duplicate removal, so that nothing outside the toolchain is needed | — |
 | [`Cpn2mCrl2/Color.lean`](Cpn2mCrl2/Color.lean) | the color grammar of [`InputFormat.md`](../docs/InputFormat.md) §4.1, and values | — |
 | [`Cpn2mCrl2/Bag.lean`](Cpn2mCrl2/Bag.lean) | Definition 1, finitely supported | — |
+| [`Cpn2mCrl2/ListOps.lean`](Cpn2mCrl2/ListOps.lean) | lists as bags: the multiset operations, against Definition 1's | — |
 | [`Cpn2mCrl2/Expr.lean`](Cpn2mCrl2/Expr.lean) | `EXPR`, intrinsically typed, and **obligation 4** | — |
 | [`Cpn2mCrl2/Typing.lean`](Cpn2mCrl2/Typing.lean) | evaluation preserves sorts | — |
 | [`Cpn2mCrl2/Net.lean`](Cpn2mCrl2/Net.lean) | Definitions 4 and 5, and `Net.Valid` | T1 |
@@ -73,7 +106,9 @@ The chain of [`Plan.md`](../docs/Plan.md) §2, left to right.
 | [`Cpn2mCrl2/Lpe.lean`](Cpn2mCrl2/Lpe.lean) | Definitions 13 and 15, syntactically | — |
 | [`Cpn2mCrl2/Translate.lean`](Cpn2mCrl2/Translate.lean) | Definition 14 | — |
 | [`Cpn2mCrl2/Correct.lean`](Cpn2mCrl2/Correct.lean) | **the T2 theorems** | T2 |
+| [`Cpn2mCrl2/ListEncoding.lean`](Cpn2mCrl2/ListEncoding.lean) | the second backend, and **the refinement** | T5 |
 | [`Cpn2mCrl2/Print.lean`](Cpn2mCrl2/Print.lean) | the mCRL2 encoding of [`Target.md`](../docs/Target.md) §1 | — |
+| [`Cpn2mCrl2/PrintList.lean`](Cpn2mCrl2/PrintList.lean) | the same for the list encoding | — |
 | [`Cpn2mCrl2/Json.lean`](Cpn2mCrl2/Json.lean) | the importer — **outside the trust boundary** | T1 |
 | [`Main.lean`](Main.lean) | the command line | — |
 | [`Cpn2mCrl2/Examples/Counter.lean`](Cpn2mCrl2/Examples/Counter.lean) | Examples 3, 4, 5 and 9, checked | — |
@@ -87,6 +122,7 @@ And the bridge, which nothing above depends on:
 | [`Bridge/Bridge/Vars.lean`](Bridge/Bridge/Vars.lean) | arcs against index pairs, and the two readings of $\mathrm{Var}(t)$ |
 | [`Bridge/Bridge/Semantics.lean`](Bridge/Bridge/Semantics.lean) | Definitions 6 and 7 on both sides |
 | [`Bridge/Bridge/Soundness.lean`](Bridge/Bridge/Soundness.lean) | **T2 composed with Theorem 1** |
+| [`Bridge/Bridge/ListSoundness.lean`](Bridge/Bridge/ListSoundness.lean) | **the list backend, composed with Theorem 1** |
 | [`Bridge/Bridge/Example.lean`](Bridge/Bridge/Example.lean) | the whole chain, on Example 3 |
 
 ---
@@ -107,12 +143,16 @@ and, in [`Bridge/`](Bridge), the one they compose into:
 | | |
 | --- | --- |
 | `Net.bisimilar_reachabilityGraph_emitted` | for a CPN that passes the T1 validation, the reachability graph of Definition 9 and the LTS denoted by the specification the translator emits are bisimilar |
+| `Net.bisimilar_reachabilityGraph_emittedList` | the same for the list-encoded specification |
 
 That is what [`Plan.md`](../docs/Plan.md) §2 calls the theorem the project is for. Its
 left-hand side is `Proof/`'s, unchanged; its right-hand side is the denotation of `Net.toLpe`,
 the object [`Print.lean`](Cpn2mCrl2/Print.lean) prints; and between them stand
 `CPN.bisimulation_transRel` — Theorem 1 of the thesis — and `Net.toLpe_step`, which is T2.
 `Cpn2mCrl2.Examples.Counter.bisimilar_emitted` instantiates it on Example 3.
+
+The second row is milestone M6, and [§4.5](#45-the-list-backend-and-the-order-problem) is what
+it took.
 
 [`Typing.lean`](Cpn2mCrl2/Typing.lean) adds one property that nothing else depends on but that
 is the reason to believe `Expr.eval` is the semantics it is meant to be: under a well-typed
@@ -229,16 +269,48 @@ Finding those is what the exercise is for. [`Plan.md`](../docs/Plan.md) §1 says
 "nothing here connects the Lean to the translation as it is actually implemented"; connecting
 them is what made the two slips visible.
 
+### 4.5 The list backend, and the order problem
+
+[`Plan.md`](../docs/Plan.md) §5 calls the list encoding "the largest unacknowledged gap in the
+project" and separates two refinements between it and Definition 14.
+
+**Typing is discharged by construction.** The reference generator of
+[`Target.md`](../docs/Target.md) §3 shares one tagged-union `token` sort across every place,
+which is what loses Definition 5's `E(p,t) : C(p)_MS`. This backend emits `List(C(p))` — one
+list sort per place at that place's own color — so a place cannot hold a token of the wrong
+color, and there is no invariant to preserve.
+[`mCRL2.md`](../../Thesis/docs/mCRL2.md) §4.1 attributes the sevenfold speedup to `List` against
+`Bag` and says nothing about sharing a sort, so nothing is given up by not copying it.
+
+**Order is the lemma.** `Net.listRel` relates a list marking to a bag marking when they give
+every token the same count, and `Net.step_of_toLpeList_step` and `Net.toLpeList_step_of_step`
+match a step of either encoding with a step of the other. Nothing anywhere asks two list states
+to be equal, which is exactly why the production order does not matter.
+
+It is visible in the fixtures. [`multitoken.cpn.json`](fixtures/multitoken.cpn.json) is the net
+[`Target.md`](../docs/Target.md) §4.1 asks for, and through the toolset the two backends give
+
+```
+bag encoding    des (0,4,4)
+list encoding   des (0,4,5)
+```
+
+— four states against five, because the list encoding reaches `[1,2]` and `[2,1]` as distinct
+states where the bag encoding reaches one marking, and `ltscompare -ebisim` reports them equal
+anyway. That is [`Plan.md`](../docs/Plan.md) §5's own prediction observed:
+
+> Those states should be bisimilar, but they are not equal — so the induced LTS has strictly more states than the reachability graph, and bisimilarity holds where isomorphism fails.
+
+Two mechanical notes for anyone reading the file. `ListLpe` repeats the shape of `Lpe` with
+list terms rather than making `Lpe` polymorphic in the state sort: `Lpe` and everything proved
+about it is settled, and a second structure costs forty lines and reopens nothing. And
+`Expr.bagToList` matches only the constructors that can land at bag sort, so its matcher
+discriminates on the index and does *not* reduce definitionally — hence the explicit equation
+lemmas beside it, which is a wrinkle worth knowing about before adding another such function.
+
 ---
 
 ## 5. What is not here
-
-**The list backend, and the refinement it needs.** Milestone M6.
-[`Plan.md`](../docs/Plan.md) §5 is explicit that the bag translator comes first and that the
-list encoding is "exactly as justified as the reference implementation's, which is to say not
-at all". [`fixtures/multitoken.cpn.json`](fixtures/multitoken.cpn.json) is the net
-[`Target.md`](../docs/Target.md) §4.1 asks for, so that when the second backend exists the
-comparison is one `ltscompare` away.
 
 **T0 and T4 are tested, never proved.** [`Plan.md`](../docs/Plan.md) §2 calls this "the honest
 ceiling": whether `mcrl22lps` accepts the text, and whether what it reads back denotes the term

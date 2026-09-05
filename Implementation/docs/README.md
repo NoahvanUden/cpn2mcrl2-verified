@@ -42,7 +42,7 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Milestone M0 is done, and so is M3: [`Implementation/Lean/`](../Lean) is a Lean 4 translator
+Milestones M0, M3 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
 that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
 builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
 [`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
@@ -65,8 +65,17 @@ bisimilar. Building it also found two places where the translator was less faith
 thesis — bindings were not typed, and type soundness assumed an unsatisfiable hypothesis —
 both now fixed; see [`Implementation/Lean/README.md`](../Lean/README.md) §4.4.
 
-Not done: the list backend and the refinement of [`Plan.md`](Plan.md) §5, which is M6, and the
-PNML importers of M7. Both are set out in
+**M6, tier T5.** The list backend of [`Plan.md`](Plan.md) §5 exists, behind `--list`, and the
+refinement between it and the bag encoding is proved rather than assumed — which §5 called
+"the largest unacknowledged gap in the project". Of the two refinements it separates, typing is
+discharged by construction (this backend emits `List(C(p))`, one list sort per place at that
+place's own color, rather than the reference generator's shared tagged union), and order is the
+lemma: `Net.bisimilar_reachabilityGraph_emittedList` puts the fast output on exactly the
+footing the slow one has. §5's prediction is visible in the fixtures — on
+`multitoken.cpn.json`, the net [`Target.md`](Target.md) §4.1 asks for, the bag encoding gives
+four states and the list encoding five, and `ltscompare -ebisim` reports them equal anyway.
+
+Not done: the PNML importers of M7. See
 [`Implementation/Lean/README.md`](../Lean/README.md) §5.
 
 Before any of that, M0's hand-written check that the target syntax is real: Example 9 of

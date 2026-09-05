@@ -28,7 +28,8 @@ cannot make, because their `LPE` is not syntax: the mCRL2 *text*.
 * `not_enabled_t2_M₅` : the correction `Thesis/docs/ColoredPetriNets.md` records against
   Figure 3.4 -- in `M₅` the token in `p₂` carries 4, so `t2` is not enabled and the chain
   stops after seven states rather than eight.
-* `expectedMcrl2` : the emitted text, character for character.
+* `expectedMcrl2`, `expectedMcrl2List` : the emitted text of both backends,
+  character for character.
 -/
 
 namespace Cpn2mCrl2.Examples.Counter
@@ -184,6 +185,40 @@ def expectedMcrl2 : String := String.intercalate "\n"
     "" ]
 
 #guard net.toMcrl2 == expectedMcrl2
+
+
+/-! ## The second backend
+
+The same net through the list encoding of `Cpn2mCrl2/ListEncoding.lean`. Its LTS has the same
+seven states here -- the counter never puts two tokens in a place, so no order is ever
+ambiguous. `fixtures/multitoken.cpn.json` is the fixture where the two differ. -/
+
+/-- The list-encoded specification, as `cpn2mcrl2 --list` prints it. -/
+def expectedMcrl2List : String := String.intercalate "
+"
+  [ "map rm_Int : Int # List(Int) -> List(Int);",
+    "    diff_Int : List(Int) # List(Int) -> List(Int);",
+    "    sub_Int : List(Int) # List(Int) -> Bool;",
+    "var _x, _y : Int;",
+    "    _l, _m : List(Int);",
+    "eqn rm_Int(_x, []) = [];",
+    "    rm_Int(_x, _y |> _l) = if(_x == _y, _l, _y |> rm_Int(_x, _l));",
+    "    diff_Int(_l, []) = _l;",
+    "    diff_Int(_l, _y |> _m) = diff_Int(rm_Int(_y, _l), _m);",
+    "    sub_Int([], _m) = true;",
+    "    sub_Int(_y |> _l, _m) = (_y in _m) && sub_Int(_l, rm_Int(_y, _m));",
+    "",
+    "act t1, t2, t3;",
+    "",
+    "proc Spec(p1 : List(Int), p2 : List(Int), p3 : List(Int)) =",
+    "    sum h : Int . (sub_Int([h], p1) && true) -> t1 . Spec(diff_Int(p1, [h]), (p2 ++ [(h + 1)]), p3)",
+    "  + sum h : Int . (sub_Int([h], p2) && (h <= 3)) -> t2 . Spec((p1 ++ [h]), diff_Int(p2, [h]), p3)",
+    "  + sum h : Int . (sub_Int([h], p2) && (3 < h)) -> t3 . Spec(p1, diff_Int(p2, [h]), (p3 ++ [h]));",
+    "",
+    "init Spec([1], [], []);",
+    "" ]
+
+#guard net.toMcrl2List == expectedMcrl2List
 
 /-! ## T2 on this net
 
