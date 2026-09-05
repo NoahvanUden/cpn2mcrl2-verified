@@ -11,4 +11,5 @@ import Cpn2mCrl2.Translate
 import Cpn2mCrl2.Correct
 import Cpn2mCrl2.ListEncoding
 import Cpn2mCrl2.Print
+import Cpn2mCrl2.PrintList
 import Cpn2mCrl2.Json

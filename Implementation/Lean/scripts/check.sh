@@ -85,6 +85,44 @@ while read -r name summands params; do
   else
     report "lts" "no golden LTS recorded; out/$name.aut written"
   fi
+
+  # The second backend of Plan.md 5, and the refinement between the two. The refinement is
+  # proved in Cpn2mCrl2/ListEncoding.lean; this runs it against the actual toolset, which is
+  # the check Target.md 4 asks for.
+  if ! "$BIN" --list "fixtures/$name.cpn.json" "out/$name.list.mcrl2"; then
+    report "translate list" "FAILED"; fail=1; continue
+  fi
+  if ! "$MCRL2_BIN/mcrl22lps" -q "out/$name.list.mcrl2" "out/$name.list.lps" \
+      2>"out/$name.err"; then
+    report "mcrl22lps list" "REJECTED the emitted text (T0)"; sed 's/^/    /' "out/$name.err"
+    fail=1; continue
+  fi
+  info="$("$MCRL2_BIN/lpsinfo" "out/$name.list.lps" 2>/dev/null)"
+  got_s="$(printf '%s\n' "$info" | sed -n 's/.*Number of summands *: *\([0-9]*\).*/\1/p')"
+  got_p="$(printf '%s\n' "$info" | sed -n 's/.*Number of process parameters *: *\([0-9]*\).*/\1/p')"
+  if [ "$got_s" = "$summands" ] && [ "$got_p" = "$params" ]; then
+    report "shape list" "$got_s summands, $got_p parameters"
+  else
+    report "shape list" "expected $summands summands and $params parameters, got $got_s and $got_p"
+    fail=1
+  fi
+  if ! "$MCRL2_BIN/lps2lts" -q "out/$name.list.lps" "out/$name.list.aut" 2>"out/$name.err"; then
+    report "lps2lts list" "FAILED"; sed 's/^/    /' "out/$name.err"; fail=1; continue
+  fi
+  states_of() { head -1 "$1" | tr -d ' \r' | sed 's/.*,\([0-9]*\))$/\1/'; }
+  bagstates="$(states_of "out/$name.aut")"
+  liststates="$(states_of "out/$name.list.aut")"
+  if "$MCRL2_BIN/ltscompare" -ebisim "out/$name.aut" "out/$name.list.aut" >/dev/null 2>&1; then
+    if [ "$bagstates" = "$liststates" ]; then
+      report "refinement" "bisimilar to the bag encoding ($bagstates states each)"
+    else
+      report "refinement" \
+        "bisimilar to the bag encoding, $bagstates bag states against $liststates list states"
+    fi
+  else
+    report "refinement" "NOT bisimilar to the bag encoding"
+    fail=1
+  fi
 done < fixtures/expected.tsv
 
 for bad in fixtures/rejected/*.cpn.json; do

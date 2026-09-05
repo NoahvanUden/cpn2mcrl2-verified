@@ -3,7 +3,7 @@ Copyright (c) 2026 Noah van Uden. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Noah van Uden
 -/
-import Bridge.Soundness
+import Bridge.ListSoundness
 import Cpn2mCrl2.Examples.Counter
 
 /-!
@@ -26,5 +26,12 @@ the LTS of the mCRL2 specification `net.toMcrl2` prints for it are bisimilar. -/
 theorem bisimilar_emitted :
     LTS.Bisimilar (net.toCPN net_valid).reachabilityGraph net.emittedLTS :=
   Net.bisimilar_reachabilityGraph_emitted net_valid
+
+/-- **The same for the fast backend.**
+The list-encoded specification `net.toMcrl2List` prints denotes an LTS bisimilar to the same
+reachability graph. -/
+theorem bisimilar_emittedList :
+    LTS.Bisimilar (net.toCPN net_valid).reachabilityGraph net.emittedListLTS :=
+  Net.bisimilar_reachabilityGraph_emittedList net_valid
 
 end Cpn2mCrl2.Examples.Counter
