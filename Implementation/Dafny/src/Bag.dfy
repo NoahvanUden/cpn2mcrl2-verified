@@ -289,6 +289,64 @@ module Bag {
     }
   }
 
+  /* The operations preserve well-typedness. `src/Typing.dfy` is what needs these: with typing
+     extrinsic there is no index to carry the color, so each case of `EvalWf` has to be given
+     the corresponding closure property by hand. */
+
+  lemma BagOfColorEmpty(c: Color)
+    ensures BagOfColor(EmptyBag(), c)
+  {
+  }
+
+  lemma BagOfColorSingle(k: nat, v: Value, c: Color)
+    requires ValueOfColor(v, c)
+    ensures BagOfColor(Single(k, v), c)
+  {
+    assert Single(k, v).entries[1..] == [];
+  }
+
+  lemma BagOfColorUnion(m1: Bag, m2: Bag, c: Color)
+    requires BagOfColor(m1, c)
+    requires BagOfColor(m2, c)
+    ensures BagOfColor(Union(m1, m2), c)
+  {
+    EntriesOfColorAppend(m1.entries, m2.entries, c);
+  }
+
+  lemma MemEntryKeysOfColor(es: seq<(Value, nat)>, c: Color, v: Value)
+    requires EntriesOfColor(es, c)
+    requires v in EntryKeys(es)
+    ensures ValueOfColor(v, c)
+  {
+    if es[0].0 != v {
+      MemEntryKeysOfColor(es[1..], c, v);
+    }
+  }
+
+  lemma DiffEntriesOfColor(ks: seq<Value>, m1: Bag, m2: Bag, c: Color)
+    requires forall v :: v in ks ==> ValueOfColor(v, c)
+    ensures EntriesOfColor(DiffEntries(ks, m1, m2), c)
+  {
+    if |ks| != 0 {
+      DiffEntriesOfColor(ks[1..], m1, m2, c);
+      var es := DiffEntries(ks, m1, m2);
+      assert es[0].0 == ks[0];
+      assert es[1..] == DiffEntries(ks[1..], m1, m2);
+    }
+  }
+
+  /** A difference holds only tokens the left operand held, so it stays at its color. */
+  lemma BagOfColorDiff(m1: Bag, m2: Bag, c: Color)
+    requires BagOfColor(m1, c)
+    ensures BagOfColor(Diff(m1, m2), c)
+  {
+    forall v | v in Keys(m1) ensures ValueOfColor(v, c) {
+      MemDedup(v, EntryKeys(m1.entries));
+      MemEntryKeysOfColor(m1.entries, c, v);
+    }
+    DiffEntriesOfColor(Keys(m1), m1, m2, c);
+  }
+
   lemma EntriesOfColorAppend(a: seq<(Value, nat)>, b: seq<(Value, nat)>, c: Color)
     ensures EntriesOfColor(a + b, c) <==> (EntriesOfColor(a, c) && EntriesOfColor(b, c))
   {
