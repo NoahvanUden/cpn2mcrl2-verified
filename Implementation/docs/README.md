@@ -42,10 +42,27 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Nothing is implemented yet. This directory is a plan only.
+Milestone M0 is done, and so is M3: [`Implementation/Lean/`](../Lean) is a Lean 4 translator
+that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
+builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
+[`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
+are theorems rather than `rfl`, and `Net.toLpe_step` composes them. Tiers T0 and T4 are tested
+by `scripts/check.sh` against mCRL2 202307.1 and are green on every fixture, including
+Example 3, whose emitted specification reproduces the corrected seven-state chain of
+Example 5.
 
-The one thing that has been done is a hand-written check that the target syntax is real:
-Example 9 of [`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both
-encodings, both were accepted by `mcrl22lps`, both produced the corrected seven-state chain of
-Example 5, and `ltscompare` reported them strongly bisimilar. The transcripts are in
+M1 was skipped rather than done: the plan puts an unverified OCaml prototype first as an
+oracle, and the Lean translator arrived before anything needed one. That leaves the M4 and M5
+comparison without the differential oracle M1 was to provide.
+
+Not done: the mechanical composition of T2 with Theorem 1, which
+[`Languages.md`](Languages.md) §3 makes the reason Lean is first — the argument holds but no
+Lean term connects the two developments. Nor the list backend and the refinement of
+[`Plan.md`](Plan.md) §5, which is M6. Both are set out in
+[`Implementation/Lean/README.md`](../Lean/README.md) §5.
+
+Before any of that, M0's hand-written check that the target syntax is real: Example 9 of
+[`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both encodings, both
+were accepted by `mcrl22lps`, both produced the corrected seven-state chain of Example 5, and
+`ltscompare` reported them strongly bisimilar. The transcripts are in
 [`Target.md`](Target.md).
