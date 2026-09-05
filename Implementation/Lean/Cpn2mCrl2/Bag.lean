@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Noah van Uden
 -/
 import Cpn2mCrl2.Color
+import Cpn2mCrl2.Util
 
 /-!
 # Bags
@@ -36,53 +37,6 @@ list append -- so the translator never has to sort or deduplicate anything.
 -/
 
 namespace Cpn2mCrl2
-
-/-! ## Duplicate-free lists of values
-
-Only what `Bag.keys` needs. Written out rather than taken from a library, so that the core
-depends on nothing beyond the Lean toolchain.
--/
-
-namespace ValueList
-
-/-- `v` prepended to `l`, unless `l` already contains it. -/
-def insertNew (v : Value) (l : List Value) : List Value := if v ∈ l then l else v :: l
-
-/-- `l` without repetitions, keeping the last occurrence of each item. -/
-def dedup : List Value → List Value
-  | [] => []
-  | v :: vs => insertNew v (dedup vs)
-
-/-- No item of `l` occurs twice. -/
-def NoDup : List Value → Prop
-  | [] => True
-  | v :: vs => v ∉ vs ∧ NoDup vs
-
-theorem mem_insertNew {u v : Value} {l : List Value} :
-    u ∈ insertNew v l ↔ u = v ∨ u ∈ l := by
-  unfold insertNew
-  split
-  · next h => exact ⟨Or.inr, fun hu => hu.elim (fun he => he ▸ h) id⟩
-  · exact List.mem_cons
-
-@[simp] theorem mem_dedup {u : Value} {l : List Value} : u ∈ dedup l ↔ u ∈ l := by
-  induction l with
-  | nil => simp [dedup]
-  | cons hd tl ih => simp [dedup, mem_insertNew, ih, List.mem_cons]
-
-theorem noDup_insertNew {v : Value} {l : List Value} (h : NoDup l) :
-    NoDup (insertNew v l) := by
-  unfold insertNew
-  split
-  · exact h
-  · next hv => exact ⟨hv, h⟩
-
-theorem noDup_dedup (l : List Value) : NoDup (dedup l) := by
-  induction l with
-  | nil => trivial
-  | cons _ _ ih => exact noDup_insertNew ih
-
-end ValueList
 
 /-- **Definition 1 (Bag)**, finitely supported: a list of `(item, coefficient)` entries.
 
@@ -124,7 +78,7 @@ instance : Union Bag := ⟨union⟩
 
 /-- The items a bag mentions, without repetition. Every item outside this list has
 coefficient `0`, which is `coeff_eq_zero_of_not_mem_keys`. -/
-def keys (m : Bag) : List Value := ValueList.dedup (m.entries.map Prod.fst)
+def keys (m : Bag) : List Value := ListUtil.dedup (m.entries.map Prod.fst)
 
 /-- Operation 6, the difference of two bags: the coefficients are subtracted and floored at
 zero, which is truncated subtraction on `ℕ`. -/
@@ -178,10 +132,10 @@ theorem entryCoeff_eq_zero_of_not_mem (es : List (Value × Nat)) (v : Value)
 
 theorem coeff_eq_zero_of_not_mem_keys {m : Bag} {v : Value} (h : v ∉ m.keys) :
     m.coeff v = 0 :=
-  entryCoeff_eq_zero_of_not_mem _ _ fun hv => h (ValueList.mem_dedup.2 hv)
+  entryCoeff_eq_zero_of_not_mem _ _ fun hv => h (ListUtil.mem_dedup.2 hv)
 
 theorem entryCoeff_map (ks : List Value) (f : Value → Nat) (v : Value)
-    (hnd : ValueList.NoDup ks) (hv : v ∈ ks) :
+    (hnd : ListUtil.NoDup ks) (hv : v ∈ ks) :
     entryCoeff (ks.map fun u => (u, f u)) v = f v := by
   induction ks with
   | nil => cases hv
@@ -195,7 +149,7 @@ theorem entryCoeff_map (ks : List Value) (f : Value → Nat) (v : Value)
 @[simp] theorem coeff_diff (m₁ m₂ : Bag) (v : Value) :
     (m₁ \ m₂).coeff v = m₁.coeff v - m₂.coeff v := by
   by_cases hv : v ∈ m₁.keys
-  · exact entryCoeff_map _ _ _ (ValueList.noDup_dedup _) hv
+  · exact entryCoeff_map _ _ _ (ListUtil.noDup_dedup _) hv
   · have h₁ : m₁.coeff v = 0 := coeff_eq_zero_of_not_mem_keys hv
     have h₂ : v ∉ (m₁.keys.map fun u => (u, m₁.coeff u - m₂.coeff u)).map Prod.fst := by
       simpa using hv
