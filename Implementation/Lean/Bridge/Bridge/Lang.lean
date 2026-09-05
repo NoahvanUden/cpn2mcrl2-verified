@@ -167,7 +167,7 @@ def boolEquiv : Val .bool ≃ Bool where
 
 /-- `Proof/`'s `ExprTy` read as ours. The two are the same two constructors over the same
 colors; they are different inductives only because one lives in `Proof/` and one here. -/
-def ofPTy : _root_.ExprTy Color → ExprTy
+@[reducible] def ofPTy : _root_.ExprTy Color → ExprTy
   | .color c => .color c
   | .bag c => .bag c
 
