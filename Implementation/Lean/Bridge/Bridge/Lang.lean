@@ -257,8 +257,13 @@ noncomputable def langEval (N : Net) (h : N.Valid) :
   | .color _, e, b => ⟨Expr.eval e.1 (N.langEnv e b), Expr.eval_wf e.1 (wfOn_langEnv h e b)⟩
   | .bag _, e, b => fun v => (Expr.eval e.1 (N.langEnv e b)).coeff v.1
 
-/-- **The concrete language, as one of the languages `Proof/` quantifies over.** -/
-noncomputable def lang (N : Net) (h : N.Valid) : ExprLang where
+/-- **The concrete language, as one of the languages `Proof/` quantifies over.**
+
+Marked `@[reducible]` so that `(N.lang h).Color`, `(N.lang h).Expr` and `(N.lang h).vars` are
+seen through to `Color`, `Net.LangExpr` and `Net.langVars`. Without it every statement mixing
+the two vocabularies -- which is every statement in this directory -- has to be transported by
+hand. -/
+@[reducible] noncomputable def lang (N : Net) (h : N.Valid) : ExprLang where
   Color := Color
   val := Bridge.Val
   boolColor := .bool
