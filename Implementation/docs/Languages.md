@@ -1,0 +1,173 @@
+# Choosing the languages
+
+Which proof technology to build the translator in, and in what order.
+
+---
+
+## 1. What is actually being selected for
+
+The obligations are fixed by [`Plan.md`](Plan.md) §4, and they are not the obligations a typical
+verification exercise has. There are no loops, no aliasing, no concurrency and no resource
+bounds. There is one recursive function over a tree, and one theorem saying that what it builds
+*denotes* what Definition 14 says it should.
+
+So the criteria are:
+
+| # | Criterion | Why |
+| --- | --- | --- |
+| **C1** | Algebraic data types and pattern matching | The CPN and the LPE term are trees. Anything without them fights the problem |
+| **C2** | A specification logic that can quantify over environments | Obligation 5 says "for every marking and every binding, the emitted term evaluates to `Enabled`". That is a statement about a function, not a value |
+| **C3** | Automation for the mechanical obligations | Obligations 1 to 3 are structural bookkeeping and should not cost proof effort |
+| **C4** | A real induction over expression syntax | Obligation 4, the substitution lemma, is where automation stops helping |
+| **C5** | Produces a runnable binary | It is a translator, not a paper |
+| **C6** | Continuity with [`Proof/`](../../Proof) | Definitions 1 to 18 and Theorem 1 already exist in Lean. Rebuilding them is pure cost |
+
+C4 is the discriminator. Almost everything below satisfies C1, C2 and C5; the interesting
+differences are how much of C3 a tool gives away for free and how painful C4 becomes when it
+does.
+
+---
+
+## 2. The field
+
+| Language | Specification | Proof style | Runs as | C4 | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| **Lean 4** | Dependent types, Mathlib | Interactive, tactics | Native via C | Natural | **Pick — #1** |
+| **Dafny** | Pre/post/invariants, ghost | Auto-active, SMT | C#, Java, Go, Python, JS | Explicit lemma functions | **Pick — #2** |
+| **OCaml + GOSPEL/Cameleer** | GOSPEL contracts | SMT via Why3 | Native OCaml | Awkward but possible | **Pick — #3** |
+| **F\*** | Dependent types + refinement | SMT with tactic fallback | Extracts to OCaml, F# | Natural | Best single fit, worst learning curve |
+| **Why3 (WhyML)** | Contracts | Multi-prover SMT | Extracts to OCaml | Explicit lemmas | The fallback under #3 |
+| **Rocq (Coq)** | Dependent types | Interactive | Extracts to OCaml | Natural | Duplicates Lean |
+| **Isabelle/HOL** | HOL | Interactive, Isar, sledgehammer | Generates SML, OCaml, Haskell, Scala | Natural | Duplicates Lean |
+| **Rust + Creusot** | Contracts | SMT via Why3 | Native | Possible | Friction on tree code |
+| **Rust + Verus** | Contracts, `spec` fns | SMT | Native | Possible | Same |
+| **OxCaml** | *none* | — | Native OCaml | n/a | **Not a verification language.** See [§4](#4-on-oxcaml) |
+| **Agda, Idris 2** | Dependent types | Interactive | Weak backends | Natural | C5 is the problem |
+| **SPARK/Ada, Liquid Haskell** | Contracts, refinement types | SMT | Native | Poor fit for C2 | Out |
+
+---
+
+## 3. The three to build
+
+### #1 — Lean 4
+
+The case is C6 and it is close to decisive. [`Proof/`](../../Proof) already contains Definitions
+1 to 18, Theorem 1, and the six worked examples. Milestone M2 — making `LPE` syntactic, giving
+`ExprLang` the Definition 14 operations with their evaluation equations, and turning
+`toLPE_cond` from `rfl` into a theorem — **is a Lean change no matter which language the
+translator is written in**, because that is where the definitions live. Once M2 is done, M3 is
+mostly the printer plus a `main`.
+
+This is also the option that gets the strongest statement. In Lean the translator's correctness
+theorem composes directly with `CPN.bisimulation_transRel`; nowhere else does it, and everywhere
+else the composition has to be argued informally across a language boundary.
+
+Cost: no SMT. Obligations 1 to 3 are mechanical but must still be written out, and C3 is
+unsatisfied. Lean compiles to C and produces a native binary, so C5 is fine.
+
+### #2 — Dafny
+
+The reason to build it a second time in Dafny is not redundancy, it is the contrast. Dafny is
+auto-active: you write the program with pre- and postconditions and Z3 discharges what it can.
+On obligations 1 to 3 — structural, first-order, finitely many cases — that should be nearly
+free, which is precisely where Lean is most tedious. Measuring *how much* of the translation SMT
+gets for nothing is the most interesting result the multi-language exercise can produce.
+
+Where it will hurt is C4. The substitution lemma is an induction over expression syntax, and in
+Dafny that means writing an explicit recursive `lemma` and trusting the termination checker.
+This is a well-worn Dafny idiom rather than a novelty, but it will be longer than it looks, and
+the resulting proof will not connect to Theorem 1 except on paper.
+
+C5 is a strength: Dafny compiles to several mainstream backends, so the verified translator can
+be dropped into a Java or C# toolchain — which is what OfflineMBT is built in.
+
+### #3 — OCaml, with GOSPEL and Cameleer
+
+The practical one. Idiomatic OCaml is the natural language for a tree-to-tree translator, and
+Cameleer verifies GOSPEL-annotated OCaml by translating it to WhyML and discharging the
+obligations with SMT. Where it works, you get verified code that is also code somebody would
+have written anyway — which neither Lean nor Dafny quite gives you.
+
+The risk is maturity: Cameleer is a research tool still working toward a first release, and
+GOSPEL itself is under active development. Two fallbacks, in order of preference:
+
+1. Write the core in **WhyML** and extract to OCaml. Why3's extraction is mature and its
+   multi-prover backend is a strength rather than a compromise.
+2. Keep the OCaml unverified and rely on differential testing against the Lean binary from #1
+   plus the `ltscompare` harness of [`Target.md`](Target.md) §4. Honest, and still useful.
+
+**Write M1's unverified prototype in OCaml.** Then #3 is "add contracts to the prototype"
+rather than a fourth implementation from scratch, and M1's output doubles as the differential
+oracle for M3 and M4.
+
+### The runner-up worth naming
+
+**F\*** is arguably the best technical fit in the table: dependent types for C2 and C4, SMT for
+C3, and extraction to OCaml for C5. It loses on C6 and on the cost of learning it. If the
+exercise were about picking one language rather than comparing several, F\* would deserve a
+serious look before Dafny.
+
+---
+
+## 4. On OxCaml
+
+OxCaml is worth being precise about, because it is easy to file under "OCaml with extra
+guarantees" and that is the wrong shelf.
+
+OxCaml is Jane Street's open-sourced branch of OCaml. What it adds is **modes** — annotations
+such as `local` and `unique` describing how a value may be used — a **kind** system for
+specifying unboxed memory layouts, and mode-based tracking of concurrent use for data-race-free
+parallelism. All three are type-system extensions aimed at performance and at safety properties
+the *type checker* can enforce.
+
+None of that is a specification logic. There is no way in OxCaml to state obligation 5 — that a
+term denotes a particular function — let alone prove it. Against the criteria in
+[§1](#1-what-is-actually-being-selected-for) it satisfies C1 and C5 and simply does not address
+C2, C3 or C4.
+
+That does not make it useless here. Two legitimate roles:
+
+- **The fast unverified reference.** If M1's prototype needs to chew through the Model Checking
+  Contest corpus at M7, OxCaml's unboxed types and stack allocation are exactly the right tool,
+  and its mode system does buy real memory-safety and data-race guarantees for a parallel run.
+- **The runtime for extracted code.** Why3 and Cameleer produce OCaml. If that OCaml is a
+  bottleneck, OxCaml is where it goes.
+
+Use it for speed, not for proof. The verified column stays Lean, Dafny and OCaml-with-contracts.
+
+---
+
+## 5. Order of work
+
+| Milestone | Language | What it establishes |
+| --- | --- | --- |
+| M1 | OCaml, unverified | The output format is right, the harness is green, and there is an oracle |
+| M2 | Lean 4 | The syntactic `LPE`, and `toLPE_cond` as a theorem |
+| M3 | Lean 4 | Verified translator #1, composing with Theorem 1 |
+| M4 | Dafny | Verified translator #2 — how much SMT gives for free |
+| M5 | OCaml + GOSPEL/Cameleer | Verified translator #3 — verified code that is also idiomatic code |
+| M7 | OxCaml, optional | Throughput for the corpus run |
+
+The comparison that makes this worth doing three times is M3 against M4 against M5, on one
+question: **which parts of [`Plan.md`](Plan.md) §4's five obligations does each technology make
+free, and which does it make expensive?** Obligations 1 to 3 should separate the tools sharply.
+Obligation 4 probably will not — it is a real induction in all three, and that is worth
+confirming rather than assuming.
+
+---
+
+## 6. Sources
+
+- Lean 4 and Mathlib. [lean-lang.org](https://lean-lang.org/) — and
+  [`Proof/`](../../Proof) in this repository.
+- Dafny. [dafny.org](https://dafny.org/)
+- M. Pereira and A. Ravara, *Cameleer: a Deductive Verification Tool for OCaml*, CAV 2021.
+  [arxiv.org/abs/2104.11050](https://arxiv.org/abs/2104.11050)
+- *Static and Dynamic Verification of OCaml Programs: The Gospel Ecosystem*.
+  [arxiv.org/pdf/2407.17289](https://arxiv.org/pdf/2407.17289)
+- Why3. [why3.lri.fr](https://why3.lri.fr/)
+- F\*. [fstar-lang.org](https://fstar-lang.org/)
+- OxCaml documentation, on modes, kinds and unboxed types.
+  [oxcaml.org/documentation](https://oxcaml.org/documentation/) — and Tarides,
+  [*Introducing Jane Street's OxCaml Branch*](https://tarides.com/blog/2025-07-09-introducing-jane-street-s-oxcaml-branch/)
+- Creusot and Verus, for Rust.
