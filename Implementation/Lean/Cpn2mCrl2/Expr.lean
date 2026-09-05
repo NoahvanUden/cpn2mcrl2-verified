@@ -252,13 +252,8 @@ inductive Expr : ExprTy → Type where
   | snoc {c : Color} (l : Expr (.list c)) (e : Expr (.color c)) : Expr (.list c)
   /-- Concatenation, mCRL2's `++`. -/
   | appendList {c : Color} (a b : Expr (.list c)) : Expr (.list c)
-  /-- The list with the first occurrence of an element dropped: the `rm` of
-  `Implementation/docs/Target.md` §3. -/
-  | rmList {c : Color} (e : Expr (.color c)) (l : Expr (.list c)) : Expr (.list c)
   /-- Multiset difference of two lists. -/
   | diffList {c : Color} (a b : Expr (.list c)) : Expr (.list c)
-  /-- Membership, mCRL2's `in`. -/
-  | inList {c : Color} (e : Expr (.color c)) (l : Expr (.list c)) : Expr (.color .bool)
   /-- Multiset inclusion of one list in another. -/
   | subList {c : Color} (a b : Expr (.list c)) : Expr (.color .bool)
 
@@ -303,9 +298,7 @@ def eval : {τ : ExprTy} → Expr τ → Env → τ.Denot
   | _, .nilList _, _ => []
   | _, .snoc l e, env => eval l env ++ [eval e env]
   | _, .appendList a b, env => eval a env ++ eval b env
-  | _, .rmList e l, env => eraseFirst (eval l env) (eval e env)
   | _, .diffList a b, env => listDiff (eval a env) (eval b env)
-  | _, .inList e l, env => .bool (decide (eval e env ∈ eval l env))
   | _, .subList a b, env => .bool (subMultiset (eval a env) (eval b env))
 
 /-- `Expr.eval`, one field at a time. -/
@@ -353,9 +346,7 @@ def freeVars : {τ : ExprTy} → Expr τ → Ctx
   | _, .nilList _ => []
   | _, .snoc l e => freeVars l ++ freeVars e
   | _, .appendList a b => freeVars a ++ freeVars b
-  | _, .rmList e l => freeVars e ++ freeVars l
   | _, .diffList a b => freeVars a ++ freeVars b
-  | _, .inList e l => freeVars e ++ freeVars l
   | _, .subList a b => freeVars a ++ freeVars b
 
 /-- `Expr.freeVars`, one field at a time. -/
@@ -467,18 +458,10 @@ theorem eval_congr : ∀ {τ : ExprTy} (e : Expr τ) {env₁ env₂ : Env},
       show _ ++ _ = _ ++ _
       rw [eval_congr a fun p hp => h p (List.mem_append_left _ hp),
         eval_congr b fun p hp => h p (List.mem_append_right _ hp)]
-  | _, .rmList e l, _, _, h => by
-      show eraseFirst _ _ = eraseFirst _ _
-      rw [eval_congr e fun p hp => h p (List.mem_append_left _ hp),
-        eval_congr l fun p hp => h p (List.mem_append_right _ hp)]
   | _, .diffList a b, _, _, h => by
       show listDiff _ _ = listDiff _ _
       rw [eval_congr a fun p hp => h p (List.mem_append_left _ hp),
         eval_congr b fun p hp => h p (List.mem_append_right _ hp)]
-  | _, .inList e l, _, _, h => by
-      show Value.bool _ = Value.bool _
-      rw [eval_congr e fun p hp => h p (List.mem_append_left _ hp),
-        eval_congr l fun p hp => h p (List.mem_append_right _ hp)]
   | _, .subList a b, _, _, h => by
       show Value.bool _ = Value.bool _
       rw [eval_congr a fun p hp => h p (List.mem_append_left _ hp),

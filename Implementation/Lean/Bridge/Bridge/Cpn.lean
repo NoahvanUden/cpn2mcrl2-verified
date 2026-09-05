@@ -39,23 +39,6 @@ through proof irrelevance.
 
 namespace Cpn2mCrl2
 
-namespace Bridge
-
-/-- Reading an arc expression at another color leaves its free variables where they were, so
-scoping survives. The mismatched case is the empty bag, which has none. -/
-theorem scopedIn_exprAt {Γ : Ctx} {a : ArcDecl} (hs : Expr.ScopedIn Γ a.expr) (c : Color) :
-    Expr.ScopedIn Γ (a.exprAt c) := by
-  by_cases hc : a.color = c
-  · intro p hp
-    rw [ArcDecl.freeVars_exprAt hc] at hp
-    exact hs p hp
-  · have he : a.exprAt c = Expr.emptyBag c := by simp [ArcDecl.exprAt, hc]
-    intro p hp
-    rw [he] at hp
-    cases hp
-
-end Bridge
-
 namespace Net
 
 /-! ## Places and transitions as indices -/
@@ -173,14 +156,14 @@ def cpnG (N : Net) (h : N.Valid) (t : N.TIdx) :
 def cpnEin (N : Net) (h : N.Valid) (a : N.PIdx × N.TIdx) (ha : a ∈ N.cpnInArc) :
     (N.lang h).ExprOn N.cpnV (.bag (N.placeAt a.1).color) :=
   ⟨⟨(N.arcOfIn a ha).exprAt (N.placeAt a.1).color,
-      Bridge.scopedIn_exprAt (h.inArcScoped _ (N.arcOfIn_mem a ha)) _⟩,
+      ArcDecl.scopedIn_exprAt (h.inArcScoped _ (N.arcOfIn_mem a ha)) _⟩,
     N.langVars_subset_varNames _⟩
 
 /-- `E(t, p)`. -/
 def cpnEout (N : Net) (h : N.Valid) (a : N.TIdx × N.PIdx) (ha : a ∈ N.cpnOutArc) :
     (N.lang h).ExprOn N.cpnV (.bag (N.placeAt a.2).color) :=
   ⟨⟨(N.arcOfOut a ha).exprAt (N.placeAt a.2).color,
-      Bridge.scopedIn_exprAt (h.outArcScoped _ (N.arcOfOut_mem a ha)) _⟩,
+      ArcDecl.scopedIn_exprAt (h.outArcScoped _ (N.arcOfOut_mem a ha)) _⟩,
     N.langVars_subset_varNames _⟩
 
 theorem initScoped {N : Net} (h : N.Valid) (p : N.PIdx) :

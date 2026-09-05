@@ -185,17 +185,25 @@ def printExpr : {τ : ExprTy} → Expr τ → String
   | _, .bagDiff a b => "(" ++ printExpr a ++ " - " ++ printExpr b ++ ")"
   | _, .bagSubset a b => "(" ++ printExpr a ++ " <= " ++ printExpr b ++ ")"
   | _, .nilList _ => "[]"
-  | _, .snoc l e => "(" ++ printExpr l ++ " <| " ++ printExpr e ++ ")"
+  | _, .snoc l e =>
+    match snocItems l with
+    | some items => "[" ++ String.intercalate ", " (items ++ [printExpr e]) ++ "]"
+    | none => "(" ++ printExpr l ++ " <| " ++ printExpr e ++ ")"
   | _, .appendList a b => "(" ++ printExpr a ++ " ++ " ++ printExpr b ++ ")"
-  | _, @Expr.rmList c e l => rmName c ++ "(" ++ printExpr e ++ ", " ++ printExpr l ++ ")"
   | _, @Expr.diffList c a b => diffName c ++ "(" ++ printExpr a ++ ", " ++ printExpr b ++ ")"
-  | _, .inList e l => "(" ++ printExpr e ++ " in " ++ printExpr l ++ ")"
   | _, @Expr.subList c a b => subName c ++ "(" ++ printExpr a ++ ", " ++ printExpr b ++ ")"
 
 /-- `printExpr`, one record field at a time. -/
 def printArgs : {fs : ColorFields} → Args fs → List String
   | _, .nil => []
   | _, .cons e rest => printExpr e :: printArgs rest
+
+/-- The elements of a list term built from `[]` by `<|`, so that it can be printed as mCRL2's
+own list literal rather than as a chain of appends. `none` for anything else. -/
+def snocItems : {c : Color} → Expr (.list c) → Option (List String)
+  | _, .nilList _ => some []
+  | _, .snoc l e => (snocItems l).map fun items => items ++ [printExpr e]
+  | _, _ => none
 
 end
 

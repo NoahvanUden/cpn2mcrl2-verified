@@ -106,6 +106,19 @@ theorem ArcDecl.freeVars_exprAt {a : ArcDecl} {c : Color} (h : a.color = c) :
     (a.exprAt c).freeVars = a.expr.freeVars := by
   subst h; simp
 
+/-- Reading an arc expression at another color leaves its free variables where they were, so
+scoping survives. The mismatched case is the empty bag, which has none. -/
+theorem ArcDecl.scopedIn_exprAt {Γ : Ctx} {a : ArcDecl} (hs : Expr.ScopedIn Γ a.expr)
+    (c : Color) : Expr.ScopedIn Γ (a.exprAt c) := by
+  by_cases hc : a.color = c
+  · intro p hp
+    rw [ArcDecl.freeVars_exprAt hc] at hp
+    exact hs p hp
+  · have he : a.exprAt c = Expr.emptyBag c := by simp [ArcDecl.exprAt, hc]
+    intro p hp
+    rw [he] at hp
+    cases hp
+
 /-- **Definition 5 (Colored Petri Net)**, as data.
 
 The tuple `(P, T, A, Σ, V, C, E, G, I)`, component for component: `places` carries `P`, `C`
