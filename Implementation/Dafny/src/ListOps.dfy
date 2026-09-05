@@ -108,7 +108,6 @@ module ListOps {
   {
     if |l| != 0 && l[0] != x {
       if v != l[0] {
-        assert v in EraseFirst(l[1..], x);
         MemOfMemEraseFirst(l[1..], x, v);
       }
     }
@@ -211,7 +210,6 @@ module ListOps {
     MemIffCountOf(b, x);
     if x !in b {
       CountOfCons(x, a[1..], x);
-      assert CountOf(a, x) > CountOf(b, x);
     } else {
       SubMultisetComplete(a[1..], EraseFirst(b, x));
       var w :| CountOf(a[1..], w) > CountOf(EraseFirst(b, x), w);

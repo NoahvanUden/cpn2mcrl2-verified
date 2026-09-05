@@ -256,6 +256,21 @@ module Net {
     }
   }
 
+  /** The head of a duplicate-free place sequence shares its name with nothing in the tail.
+    *
+    * The one step every lookup-by-name induction needs, and the only place `PlacesNoDup` is
+    * ever taken apart. `src/Translate.dfy` uses it twice more. */
+  lemma HeadNameFresh(ps: seq<PlaceDecl>, d: PlaceDecl)
+    requires |ps| > 0
+    requires NoDup(PlaceNames(ps))
+    requires d in ps[1..]
+    ensures ps[0].pname != d.pname
+  {
+    MemPlaceNames(ps[1..], d);
+    assert PlaceNames(ps)[0] == ps[0].pname;
+    assert PlaceNames(ps)[1..] == PlaceNames(ps[1..]);
+  }
+
   /** With the place names distinct, looking a place up by its own name finds it. This is where
     * `PlacesNoDup` -- one of the side conditions `LeanFormalization.md` 4.5 records as inert in
     * `Proof/` -- starts doing work. */
@@ -266,12 +281,7 @@ module Net {
   {
     if ps[0] != d {
       assert d in ps[1..];
-      if ps[0].pname == d.pname {
-        MemPlaceNames(ps[1..], d);
-        assert PlaceNames(ps)[0] == ps[0].pname;
-        assert PlaceNames(ps)[1..] == PlaceNames(ps[1..]);
-        assert false;
-      }
+      HeadNameFresh(ps, d);
       FindPlaceOfMem(ps[1..], d);
     }
   }

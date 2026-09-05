@@ -195,12 +195,7 @@ module Translate {
   {
     if ps[0] != d {
       assert d in ps[1..];
-      if ps[0].pname == d.pname {
-        MemPlaceNames(ps[1..], d);
-        assert PlaceNames(ps)[0] == ps[0].pname;
-        assert PlaceNames(ps)[1..] == PlaceNames(ps[1..]);
-        assert false;
-      }
+      HeadNameFresh(ps, d);
       var es := NextEntries(n, t, ps);
       assert es[0].0 == ps[0].pname;
       assert es[1..] == NextEntries(n, t, ps[1..]);
@@ -229,12 +224,7 @@ module Translate {
   {
     if ps[0] != d {
       assert d in ps[1..];
-      if ps[0].pname == d.pname {
-        MemPlaceNames(ps[1..], d);
-        assert PlaceNames(ps)[0] == ps[0].pname;
-        assert PlaceNames(ps)[1..] == PlaceNames(ps[1..]);
-        assert false;
-      }
+      HeadNameFresh(ps, d);
       var es := InitEntries(ps);
       assert es[0].0 == ps[0].pname;
       assert es[1..] == InitEntries(ps[1..]);
