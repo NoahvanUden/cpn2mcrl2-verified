@@ -4,3 +4,7 @@ import Cpn2mCrl2.Bag
 import Cpn2mCrl2.Expr
 import Cpn2mCrl2.Net
 import Cpn2mCrl2.Semantics
+import Cpn2mCrl2.Lpe
+import Cpn2mCrl2.Translate
+import Cpn2mCrl2.Correct
+import Cpn2mCrl2.Print
