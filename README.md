@@ -8,8 +8,11 @@ models used in the Matala project at TNO-ESI/ASML) to mCRL2 Linear Process Equat
 proves the two are bisimilar — so a property checked with the mCRL2 model checker holds for
 the mCRL2 specification if and only if it holds for the original BPMN model.
 
-This repository holds the thesis itself and a set of Markdown notes that extract the
-formalisms it defines into a form that is easier to work from than the PDF.
+This repository holds the thesis itself; a set of Markdown notes that extract the formalisms it
+defines into a form that is easier to work from than the PDF; a Lean 4 formalization of those
+definitions, with the soundness theorem proved; three implementations of the translation, two of
+them verified and emitting text identical to the third; and a plan for testing all three against
+a reachability graph computed outside this repository.
 
 ## Contents
 
