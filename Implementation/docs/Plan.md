@@ -257,7 +257,7 @@ direction to check first.
 | **M2** | The formalization made syntactic. `ExprTy` gains products, the expression language gains the Definition 14 operations with their evaluation equations, `toLPE_cond` becomes a theorem. | [§4](#4-the-proof-obligations-concretely) | T2, in Lean | Done, differently, and last |
 | **M3** | Verified translator **#1, Lean 4**. Compiled to a binary, differential-tested against M1. | M2 | T2 with T3 | Done |
 | **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
-| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Partly done — translator yes, verification no |
+| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Done, as a negative result: the translator, and the reason it is not verified |
 | **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
 | **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M1 | broader T1 | Not started |
 
@@ -293,9 +293,9 @@ necessary, and the second turned out to be undesirable.
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2 is the record of why, and
 [§4](#4-the-proof-obligations-concretely) above summarises the finding.
 
-**M5 stopped half-way, deliberately.** [`Implementation/OCaml/`](../OCaml) is a third
-translator that emits text byte-identical to the other two on every fixture in both encodings,
-and nothing about it is proved. Cameleer will not read it: `=` in program code is `int`
+**M5 is done, and what it delivers is a negative result.**
+[`Implementation/OCaml/`](../OCaml) is a third translator that emits text byte-identical to the
+other two on every fixture in both encodings, and nothing about it is proved. Cameleer will not read it: `=` in program code is `int`
 equality, six of the standard-library functions it uses are unknown symbols, `when` guards and
 `include` are unsupported, it verifies one file at a time, and `open` on a module in that file
 is read as a Why3 library import. Rewriting the core into the fragment it does accept cost
