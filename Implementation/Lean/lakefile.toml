@@ -1,0 +1,19 @@
+name = "Cpn2mCrl2"
+version = "0.1.0"
+defaultTargets = ["Cpn2mCrl2", "cpn2mcrl2"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+# The examples live under the Cpn2mCrl2 namespace rather than in an Examples library of
+# their own, because Proof/ already has one and module names are global: Bridge/ imports
+# both packages, and Examples.Counter would be ambiguous there.
+[[lean_lib]]
+name = "Cpn2mCrl2"
+globs = ["Cpn2mCrl2", "Cpn2mCrl2.+"]
+
+[[lean_exe]]
+name = "cpn2mcrl2"
+root = "Main"

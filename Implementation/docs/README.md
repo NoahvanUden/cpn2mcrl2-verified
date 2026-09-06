@@ -42,10 +42,44 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Nothing is implemented yet. This directory is a plan only.
+Milestones M0, M3 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
+that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
+builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
+[`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
+are theorems rather than `rfl`, and `Net.toLpe_step` composes them. Tiers T0 and T4 are tested
+by `scripts/check.sh` against mCRL2 202307.1 and are green on every fixture, including
+Example 3, whose emitted specification reproduces the corrected seven-state chain of
+Example 5.
 
-The one thing that has been done is a hand-written check that the target syntax is real:
-Example 9 of [`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both
-encodings, both were accepted by `mcrl22lps`, both produced the corrected seven-state chain of
-Example 5, and `ltscompare` reported them strongly bisimilar. The transcripts are in
+M1 was skipped rather than done: the plan puts an unverified OCaml prototype first as an
+oracle, and the Lean translator arrived before anything needed one. That leaves the M4 and M5
+comparison without the differential oracle M1 was to provide.
+
+The composition of T2 with Theorem 1 — which [`Languages.md`](Languages.md) §3 makes the
+reason Lean is first — is now a Lean term and not an argument in prose:
+`Net.bisimilar_reachabilityGraph_emitted` in
+[`Implementation/Lean/Bridge/`](../Lean/Bridge), a second, proof-only package so that the
+translator itself stays Mathlib-free. For a CPN that passes the T1 validation, the
+reachability graph of Definition 9 and the LTS denoted by the emitted specification are
+bisimilar. Building it also found two places where the translator was less faithful than the
+thesis — bindings were not typed, and type soundness assumed an unsatisfiable hypothesis —
+both now fixed; see [`Implementation/Lean/README.md`](../Lean/README.md) §4.4.
+
+**M6, tier T5.** The list backend of [`Plan.md`](Plan.md) §5 exists, behind `--list`, and the
+refinement between it and the bag encoding is proved rather than assumed — which §5 called
+"the largest unacknowledged gap in the project". Of the two refinements it separates, typing is
+discharged by construction (this backend emits `List(C(p))`, one list sort per place at that
+place's own color, rather than the reference generator's shared tagged union), and order is the
+lemma: `Net.bisimilar_reachabilityGraph_emittedList` puts the fast output on exactly the
+footing the slow one has. §5's prediction is visible in the fixtures — on
+`multitoken.cpn.json`, the net [`Target.md`](Target.md) §4.1 asks for, the bag encoding gives
+four states and the list encoding five, and `ltscompare -ebisim` reports them equal anyway.
+
+Not done: the PNML importers of M7. See
+[`Implementation/Lean/README.md`](../Lean/README.md) §5.
+
+Before any of that, M0's hand-written check that the target syntax is real: Example 9 of
+[`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both encodings, both
+were accepted by `mcrl22lps`, both produced the corrected seven-state chain of Example 5, and
+`ltscompare` reported them strongly bisimilar. The transcripts are in
 [`Target.md`](Target.md).
