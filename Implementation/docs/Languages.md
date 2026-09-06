@@ -58,6 +58,8 @@ The case is C6 and it is close to decisive. [`Proof/`](../../Proof) already cont
 translator is written in**, because that is where the definitions live. Once M2 is done, M3 is
 mostly the printer plus a `main`.
 
+> **That last sentence is wrong, and the order it assumes did not happen.** M3 was built first and does not depend on M2 at all: it fixes its own concrete expression language rather than changing `Proof/`'s abstract one, and the composition with Theorem 1 goes through a separate `Bridge/` package. M2's value is what it establishes for *every* expression language, not what it saves a translator. See [`Plan.md`](Plan.md) §6.1.
+
 This is also the option that gets the strongest statement. In Lean the translator's correctness
 theorem composes directly with `CPN.bisimulation_transRel`; nowhere else does it, and everywhere
 else the composition has to be argued informally across a language boundary.
@@ -139,20 +141,47 @@ Use it for speed, not for proof. The verified column stays Lean, Dafny and OCaml
 
 ## 5. Order of work
 
-| Milestone | Language | What it establishes |
-| --- | --- | --- |
-| M1 | OCaml, unverified | The output format is right, the harness is green, and there is an oracle |
-| M2 | Lean 4 | The syntactic `LPE`, and `toLPE_cond` as a theorem |
-| M3 | Lean 4 | Verified translator #1, composing with Theorem 1 |
-| M4 | Dafny | Verified translator #2 — how much SMT gives for free |
-| M5 | OCaml + GOSPEL/Cameleer | Verified translator #3 — verified code that is also idiomatic code |
-| M7 | OxCaml, optional | Throughput for the corpus run |
+| Milestone | Language | What it establishes | Status |
+| --- | --- | --- | --- |
+| M1 | OCaml, unverified | The output format is right, the harness is green, and there is an oracle | Skipped |
+| M2 | Lean 4 | The syntactic `LPE`, and `toLPE_cond` as a theorem | Done, last |
+| M3 | Lean 4 | Verified translator #1, composing with Theorem 1 | Done |
+| M4 | Dafny | Verified translator #2 — how much SMT gives for free | Done |
+| M5 | OCaml + GOSPEL/Cameleer | Verified translator #3 — verified code that is also idiomatic code | Not started |
+| M7 | OxCaml, optional | Throughput for the corpus run | Not started |
 
 The comparison that makes this worth doing three times is M3 against M4 against M5, on one
 question: **which parts of [`Plan.md`](Plan.md) §4's five obligations does each technology make
 free, and which does it make expensive?** Obligations 1 to 3 should separate the tools sharply.
 Obligation 4 probably will not — it is a real induction in all three, and that is worth
 confirming rather than assuming.
+
+### 5.1 The answer, so far
+
+Two of the three are built, and the answer they give is mostly negative.
+
+**Obligations 1 to 3 did not separate the tools**, because there was nothing to separate.
+Obligation 1 is not needed by anyone: Definition 13's tuple sorts are only ever bound, so no
+product former is required in Lean, in Dafny, or in [`Proof/`](../../Proof). Obligations 2 and
+3 are about twenty first-order cases, mechanical in both, and SMT had nothing to give away.
+
+**Obligation 4 did not separate them either — and it is not an induction.** The prediction
+above is half right. In all three developments the obligation costs nothing, and the reason is
+not the one this page assumed: an expression is evaluated under a binding restricted to its own
+free variables, so moving it into the summand's context is not a re-indexing. Scoping is
+extrinsic in all three. Had any of them indexed terms by a typing context instead, the cost
+would have been real — in *whichever* language.
+
+**Where they did separate is not on [`Plan.md`](Plan.md) §4's list at all.** The T2 file is the
+one file that is smaller in Dafny, 175 lines against Lean's 266, because Z3 needs none of the
+`show` steps Lean needs to force definitional unfolding. Everything else that differs in size
+measures the two standard libraries.
+[`Implementation/Dafny/README.md`](../Dafny/README.md) §5 has the numbers.
+
+**What is left for M5 is therefore a different question.** "How much does the automation give
+away" is answered. What OCaml with GOSPEL/Cameleer would still test is C5 in its strongest
+form: whether the verified artifact can also be code somebody would have written anyway, which
+is the one thing neither Lean nor Dafny delivers.
 
 ---
 
