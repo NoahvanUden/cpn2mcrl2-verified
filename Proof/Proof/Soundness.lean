@@ -30,9 +30,10 @@ the two sides up component by component with nothing left to say.
 
 The comparison itself is still made, and not assumed: `CPN.toLPE` builds `c_t` and `g_t` from
 Definition 14's text rather than reusing `Enabled` and `fire`, and `CPN.toLPE_cond` and
-`CPN.toLPE_next` are what identify the two. Both hold by `rfl` -- the two are transcriptions
-of one formula -- but they are claims that stop typechecking if either side drifts, which is
-what keeps this theorem from being a statement about a single object under two names.
+`CPN.toLPE_next` are what identify the two. Neither holds by `rfl`. `CPN.toLPE` assembles
+`c_t` and `g_t` as *terms* -- `CPN.condTerm` and `CPN.nextTerm` -- and what the two theorems
+say is that evaluating those terms gives Definitions 6 and 7 back. `CPN.toLPESemantics_step`
+below is where this proof uses them, and it is the only place where it does.
 
 What is left is the part of the proof that is not bookkeeping: the two LTSs do not have the
 same states. The reachability graph is restricted to `{M₀} ∪ R(M₀)` while the induced LTS

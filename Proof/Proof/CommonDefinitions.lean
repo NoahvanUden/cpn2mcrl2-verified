@@ -172,8 +172,13 @@ variable (L : ExprLang)
 /-- The bindings of a set of variables `V`. -/
 def Binding (V : Set L.Var) : Type _ := Bindings L.val L.varType V
 
-/-- `EXPR_V`, the expressions of type `τ` whose free variables are contained in `V`. -/
-def ExprOn (V : Set L.Var) (τ : ExprTy L.Color) : Type _ := {e : L.Expr τ // L.vars e ⊆ V}
+/-- `EXPR_V`, the expressions of type `τ` whose free variables are contained in `V`.
+
+Marked `@[reducible]`, for the same reason as `ExprTy.Value`: an expression paired with a
+proof about its free variables should be recognised as a subtype without unfolding, so that
+a term built from one -- `CPN.Term.expr`, say -- rewrites with its evaluation equation. -/
+@[reducible] def ExprOn (V : Set L.Var) (τ : ExprTy L.Color) : Type _ :=
+  {e : L.Expr τ // L.vars e ⊆ V}
 
 variable {L}
 
