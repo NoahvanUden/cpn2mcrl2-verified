@@ -34,7 +34,7 @@ does.
 | --- | --- | --- | --- | --- | --- |
 | **Lean 4** | Dependent types, Mathlib | Interactive, tactics | Native via C | Natural | **Pick — #1** |
 | **Dafny** | Pre/post/invariants, ghost | Auto-active, SMT | C#, Java, Go, Python, JS | Explicit lemma functions | **Pick — #2** |
-| **OCaml + GOSPEL/Cameleer** | GOSPEL contracts | SMT via Why3 | Native OCaml | Awkward but possible | **Pick — #3** |
+| **OCaml + GOSPEL/Cameleer** | GOSPEL contracts | SMT via Why3 | Native OCaml | Awkward but possible | **Picked — #3, and it did not carry it. See [§5.2](#52-the-answer-m5-gave-which-is-no)** |
 | **F\*** | Dependent types + refinement | SMT with tactic fallback | Extracts to OCaml, F# | Natural | Best single fit, worst learning curve |
 | **Why3 (WhyML)** | Contracts | Multi-prover SMT | Extracts to OCaml | Explicit lemmas | The fallback under #3 |
 | **Rocq (Coq)** | Dependent types | Interactive | Extracts to OCaml | Natural | Duplicates Lean |
@@ -102,6 +102,8 @@ GOSPEL itself is under active development. Two fallbacks, in order of preference
 rather than a fourth implementation from scratch, and M1's output doubles as the differential
 oracle for M3 and M4.
 
+> **What happened instead.** M1 was skipped, so #3 started from nothing; the prototype got written at M5 and is [`Implementation/OCaml/`](../OCaml). The maturity risk named above materialised, and the fallback taken is the second one, not the first. But the obstacle was not the one this paragraph anticipates: the difficulty is not that Cameleer is unfinished around the edges, it is that the fragment of OCaml it reads excludes structural equality — so "add contracts to the prototype" is not a thing that can be done to a prototype somebody would have written. See [§5.2](#52-the-answer-m5-gave-which-is-no).
+
 ### The runner-up worth naming
 
 **F\*** is arguably the best technical fit in the table: dependent types for C2 and C4, SMT for
@@ -147,7 +149,7 @@ Use it for speed, not for proof. The verified column stays Lean, Dafny and OCaml
 | M2 | Lean 4 | The syntactic `LPE`, and `toLPE_cond` as a theorem | Done, last |
 | M3 | Lean 4 | Verified translator #1, composing with Theorem 1 | Done |
 | M4 | Dafny | Verified translator #2 — how much SMT gives for free | Done |
-| M5 | OCaml + GOSPEL/Cameleer | Verified translator #3 — verified code that is also idiomatic code | Not started |
+| M5 | OCaml + GOSPEL/Cameleer | Verified translator #3 — verified code that is also idiomatic code | Translator done, verification abandoned |
 | M7 | OxCaml, optional | Throughput for the corpus run | Not started |
 
 The comparison that makes this worth doing three times is M3 against M4 against M5, on one
@@ -178,10 +180,45 @@ one file that is smaller in Dafny, 175 lines against Lean's 266, because Z3 need
 measures the two standard libraries.
 [`Implementation/Dafny/README.md`](../Dafny/README.md) §5 has the numbers.
 
-**What is left for M5 is therefore a different question.** "How much does the automation give
-away" is answered. What OCaml with GOSPEL/Cameleer would still test is C5 in its strongest
-form: whether the verified artifact can also be code somebody would have written anyway, which
-is the one thing neither Lean nor Dafny delivers.
+**What was left for M5 was therefore a different question.** "How much does the automation give
+away" is answered. What OCaml with GOSPEL/Cameleer still tested is C5 in its strongest form:
+whether the verified artifact can also be code somebody would have written anyway, which is the
+one thing neither Lean nor Dafny delivers.
+
+### 5.2 The answer M5 gave, which is no
+
+[`Implementation/OCaml/`](../OCaml) is a third translator. It emits text byte-identical to both
+others on every fixture in both encodings, and **nothing about it is proved**, because Cameleer
+cannot read it.
+
+The obstacles are listed in [`Implementation/OCaml/README.md`](../OCaml/README.md) §4. Three of
+them decide the question:
+
+- **`=` in program code is `int` equality.** Not strings, not booleans, not user datatypes. So
+  every compared type needs a hand-written decidable equality — which is precisely what Lean
+  derives with `deriving DecidableEq` and Dafny gives away with `(==)` on any datatype. The one
+  thing this table's §2 does not score, and the one that decided it.
+- **Six of the standard-library functions the translator uses are unknown symbols**, so
+  `List.for_all`, `List.concat_map` and `List.find_opt` come back as hand-written recursion.
+- **It verifies one file at a time, and `open` on a module in that file is read as a Why3
+  library import.** The verified part cannot use the module system.
+
+Rewriting the core into the fragment Cameleer does accept cost +280/−106 lines and bought no
+proof at all. That rewrite is the measurement: what it deletes is exactly the idiom that made
+C1 and C5 worth scoring in the first place.
+
+**The scoring in [§2](#2-the-field) was wrong about where the difficulty is.** C4 was named the
+discriminator, on the assumption that obligation 4 would be a real induction everywhere. It is
+free everywhere. What actually separates the three tools is a criterion this page does not
+have: *how much of the language the prover can see.* Lean and Dafny verify the language they
+compile. Cameleer verifies a fragment, and the fragment excludes structural equality — so in
+OCaml, alone of the three, the verified program and the natural program are different programs.
+
+One further data point, from before any of that. **Cameleer is not in the opam repository.** It
+installs from a git pin whose `gospel` commit does not compile against `cmdliner` 2.x, and it
+drags in `why3-ide` and GTK headers for a command-line tool. §3's "research tool still working
+toward a first release" was accurate, and the risk table of
+[`Plan.md`](Plan.md) §7 rated it correctly at Medium.
 
 ---
 

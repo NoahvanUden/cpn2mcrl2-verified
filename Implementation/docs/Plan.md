@@ -257,7 +257,7 @@ direction to check first.
 | **M2** | The formalization made syntactic. `ExprTy` gains products, the expression language gains the Definition 14 operations with their evaluation equations, `toLPE_cond` becomes a theorem. | [§4](#4-the-proof-obligations-concretely) | T2, in Lean | Done, differently, and last |
 | **M3** | Verified translator **#1, Lean 4**. Compiled to a binary, differential-tested against M1. | M2 | T2 with T3 | Done |
 | **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
-| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Not started |
+| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Partly done — translator yes, verification no |
 | **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
 | **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M1 | broader T1 | Not started |
 
@@ -293,6 +293,19 @@ necessary, and the second turned out to be undesirable.
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2 is the record of why, and
 [§4](#4-the-proof-obligations-concretely) above summarises the finding.
 
+**M5 stopped half-way, deliberately.** [`Implementation/OCaml/`](../OCaml) is a third
+translator that emits text byte-identical to the other two on every fixture in both encodings,
+and nothing about it is proved. Cameleer will not read it: `=` in program code is `int`
+equality, six of the standard-library functions it uses are unknown symbols, `when` guards and
+`include` are unsupported, it verifies one file at a time, and `open` on a module in that file
+is read as a Why3 library import. Rewriting the core into the fragment it does accept cost
++280/−106 lines and bought no proof — and the rewrite is the measurement, because what it
+removes is exactly the idiom that made OCaml worth trying. The work was stopped there rather
+than carried through the specification layer, on the grounds that finishing would confirm
+obligation 4 free a fourth time and change nothing else. See
+[`Implementation/OCaml/README.md`](../OCaml/README.md) §4 and §6.1, the second of which records
+what finishing would take.
+
 ---
 
 ## 7. Risks
@@ -301,7 +314,7 @@ necessary, and the second turned out to be undesirable.
 | --- | --- | --- | --- |
 | Obligation 4, the substitution lemma, is harder than it looks | High | Prototype it in Lean at M2, before committing to three implementations | **Rated wrongly.** It cost nothing in any of the three, and the mitigation never ran, because M2 came last. See [§4](#4-the-proof-obligations-concretely) |
 | M2's `ExprTy` surgery ripples through `Examples/` | Low | §5.1 notes `CounterNet.Expr` is already a free-variable set paired with an evaluation function, so supplying the new fields is mechanical | **Rated correctly, for the wrong reason.** There was no `ExprTy` surgery at all; the ripple was six lemmas in `Examples/CounterNetLPE.lean`, one `rw` each |
-| Cameleer is research-grade and may not carry M5 | Medium | Fall back to plain Why3, or to OCaml with the proof in Lean and the OCaml differential-tested | **Still open.** M5 is not started |
+| Cameleer is research-grade and may not carry M5 | Medium | Fall back to plain Why3, or to OCaml with the proof in Lean and the OCaml differential-tested | **Materialised, and the rating was right.** It does not carry M5. The fallback taken is the second one: the OCaml is unverified and differential-tested against both other translators |
 | The list refinement of [§5](#5-the-bag-versus-list-problem) is false as stated | Medium | Cheap to falsify with `ltscompare` on a net holding several tokens in one place. Do it at M1, not M6 | **Did not materialise.** The refinement holds and is proved twice; `multitoken.cpn.json` is the falsification test and it is in the harness |
 | T4 stays untestable in some corner | Low | `mcrl22lps` in CI on every fixture | **Held.** `scripts/check.sh` runs the toolset on every fixture, in both encodings |
 | Scope creep into BPMN | High | Chapter 4 is out of scope for the notes and stays out of scope here. The input is a CPN | **Held.** The input is still a CPN |

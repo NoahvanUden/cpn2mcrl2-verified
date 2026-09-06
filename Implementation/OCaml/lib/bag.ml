@@ -33,7 +33,7 @@ let sub a b = if a >= b then a - b else 0
 let rec coeff m v =
   match m with
   | [] -> 0
-  | (v', n) :: rest -> (if value_eq v' v then n else 0) + coeff rest v
+  | (v', n) :: rest -> (if v' = v then n else 0) + coeff rest v
 
 (** The empty bag. *)
 let empty : t = []
@@ -56,15 +56,7 @@ let diff (m1 : t) (m2 : t) : t =
     Only the values [m1] mentions need checking: every other value has coefficient zero in
     [m1], and zero is below anything. *)
 let subset (m1 : t) (m2 : t) =
-  Util.all (fun k -> coeff m1 k <= coeff m2 k) (keys m1)
-
-(** Structural equality on bags, entry by entry. Needed because [Expr.eval] of an equality
-    test compares denotations, and a denotation may be a bag. *)
-let rec bag_eq (m1 : t) (m2 : t) : bool =
-  match (m1, m2) with
-  | [], [] -> true
-  | (v1, n1) :: r1, (v2, n2) :: r2 -> value_eq v1 v2 && n1 = n2 && bag_eq r1 r2
-  | _ -> false
+  List.for_all (fun k -> coeff m1 k <= coeff m2 k) (keys m1)
 
 (** Every value the bag mentions has the color [c]. *)
-let of_color (m : t) c = Util.all (fun p -> value_of_color (fst p) c) m
+let of_color (m : t) c = List.for_all (fun (v, _) -> value_of_color v c) m
