@@ -32,7 +32,7 @@ let () =
           exit 1
       | Ok net ->
           let text =
-            if list_mode then Cpn2mcrl2.Print.to_mcrl2 net
+            if list_mode then Cpn2mcrl2.Print_list.to_mcrl2_list net
             else Cpn2mcrl2.Print.to_mcrl2 net
           in
           (match rest with
