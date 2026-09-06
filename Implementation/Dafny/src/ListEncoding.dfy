@@ -189,8 +189,11 @@ module ListEncoding {
   {
     match e
     case EVar(x, t) =>
+      // Vacuous: a term of sort `BT(c)` that is a variable has a bag-sorted variable free in
+      // it, and the second precondition says every free variable is color-sorted. This is the
+      // hypothesis `VarsAreColors` supplies at every call site.
       assert (x, t) in FreeVars(e);
-      assert IsColorSort(t);
+      assert {:contradiction} IsColorSort(t);
     case EEmptyBag(_) =>
     case ESingle(k, e0) =>
       CountOfEvalReplicateT(c, k, e0, lenv, v);
