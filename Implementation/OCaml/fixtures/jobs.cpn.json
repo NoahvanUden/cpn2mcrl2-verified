@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "The rest of the color language of Implementation/docs/InputFormat.md 4.1: an",
+    "enumeration, a record, projection out of a record, and a record built in an arc",
+    "expression. Example 3 uses none of them, so without this fixture the sort declarations",
+    "of Cpn2mCrl2/Print.lean and the mkRec and proj cases of the type checker are never run.",
+    "",
+    "Two jobs start pending; finish moves one at a time, flipping its status to done."
+  ],
+  "colors": {
+    "Int":    { "kind": "int" },
+    "Bool":   { "kind": "bool" },
+    "Status": { "kind": "enum", "ids": ["fresh", "done"] },
+    "Job":    { "kind": "record", "fields": [["num", "Int"], ["state", "Status"]] }
+  },
+  "variables": { "j": "Job" },
+  "places": {
+    "pending": {
+      "color": "Job",
+      "init": ["bag", [
+        [1, ["rec", "Job", [["num", ["int", 1]], ["state", ["ctor", "fresh"]]]]],
+        [1, ["rec", "Job", [["num", ["int", 2]], ["state", ["ctor", "fresh"]]]]]
+      ]]
+    },
+    "archive": { "color": "Job", "init": ["emptyBag"] }
+  },
+  "transitions": {
+    "finish": {
+      "guard": ["=", ["proj", ["var", "j"], "state"], ["ctor", "fresh"]]
+    }
+  },
+  "inArcs": [
+    { "place": "pending", "transition": "finish", "expr": ["bag", [[1, ["var", "j"]]]] }
+  ],
+  "outArcs": [
+    { "transition": "finish", "place": "archive",
+      "expr": ["bag", [[1, ["rec", "Job", [
+        ["num", ["proj", ["var", "j"], "num"]],
+        ["state", ["ctor", "done"]]
+      ]]]]] }
+  ]
+}

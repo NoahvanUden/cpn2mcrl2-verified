@@ -1,0 +1,5 @@
+; The verified core. `yojson` is used only by Import, which is outside the
+; trust boundary; nothing else in the library depends on it.
+(library
+ (name cpn2mcrl2)
+ (libraries yojson))

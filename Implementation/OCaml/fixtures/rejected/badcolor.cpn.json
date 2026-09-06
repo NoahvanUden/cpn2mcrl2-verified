@@ -1,0 +1,9 @@
+{
+  "_comment": "InputFormat.md 4.3 check 5: the arc expression is not of the color of its place.",
+  "colors": { "Int": { "kind": "int" }, "Bool": { "kind": "bool" } },
+  "variables": { "b": "Bool" },
+  "places": { "p": { "color": "Int", "init": ["emptyBag"] } },
+  "transitions": { "t": { "guard": ["bool", true] } },
+  "inArcs": [ { "place": "p", "transition": "t", "expr": ["bag", [[1, ["var", "b"]]]] } ],
+  "outArcs": []
+}

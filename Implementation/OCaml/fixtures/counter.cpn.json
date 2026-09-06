@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "Example 3 of the thesis, transcribed in Thesis/docs/ColoredPetriNets.md, and written",
+    "out as native CPN JSON exactly as Implementation/docs/InputFormat.md 4.2 gives it.",
+    "Its reachability graph is Example 5 -- the corrected seven-state chain -- and its",
+    "translation is Example 9, so this one input exercises three worked examples at once."
+  ],
+  "colors": {
+    "Int":  { "kind": "int" },
+    "Bool": { "kind": "bool" }
+  },
+  "variables": { "h": "Int" },
+  "places": {
+    "p1": { "color": "Int", "init": ["bag", [[1, ["int", 1]]]] },
+    "p2": { "color": "Int", "init": ["emptyBag"] },
+    "p3": { "color": "Int", "init": ["emptyBag"] }
+  },
+  "transitions": {
+    "t1": { "guard": ["bool", true] },
+    "t2": { "guard": ["<=", ["var", "h"], ["int", 3]] },
+    "t3": { "guard": ["<",  ["int", 3], ["var", "h"]] }
+  },
+  "inArcs": [
+    { "place": "p1", "transition": "t1", "expr": ["bag", [[1, ["var", "h"]]]] },
+    { "place": "p2", "transition": "t2", "expr": ["bag", [[1, ["var", "h"]]]] },
+    { "place": "p2", "transition": "t3", "expr": ["bag", [[1, ["var", "h"]]]] }
+  ],
+  "outArcs": [
+    { "transition": "t1", "place": "p2",
+      "expr": ["bag", [[1, ["+", ["var", "h"], ["int", 1]]]]] },
+    { "transition": "t2", "place": "p1", "expr": ["bag", [[1, ["var", "h"]]]] },
+    { "transition": "t3", "place": "p3", "expr": ["bag", [[1, ["var", "h"]]]] }
+  ]
+}

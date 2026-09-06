@@ -21,7 +21,7 @@ Closing that link is what this directory is for.
 | [`Plan.md`](Plan.md) | The goal, what "verifiable" is allowed to mean here, the architecture, the proof obligations and the milestones |
 | [`InputFormat.md`](InputFormat.md) | Which CPN interchange formats exist, which one the verified core consumes, and the expression language it fixes |
 | [`Target.md`](Target.md) | The mCRL2 output: validated syntax, the encoding the reference tool actually emits, and the differential-testing harness |
-| [`Languages.md`](Languages.md) | Dafny, Lean, OCaml/OxCaml, F\*, Why3, Rocq, Isabelle, Rust — scored against the obligations in `Plan.md` |
+| [`Languages.md`](Languages.md) | Dafny, Lean, OCaml/OxCaml, F\*, Why3, Rocq, Isabelle, Rust — scored against the obligations in `Plan.md`, and §5 is what building it three times actually showed |
 
 ## The short version
 
@@ -42,8 +42,9 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Milestones M0, M2, M3, M4 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
-that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
+Milestones M0, M2, M3, M4 and M6 are done, and M5 is half done.
+[`Implementation/Lean/`](../Lean) is a Lean 4 translator that reads the native CPN format of
+[`InputFormat.md`](InputFormat.md) §4, validates it,
 builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
 [`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
 are theorems rather than `rfl`, and `Net.toLpe_step` composes them. Tiers T0 and T4 are tested
@@ -121,9 +122,33 @@ expression into the summand's context is a different restriction of the same bin
 than a re-indexing of the term. See
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2.
 
-Not done: M5, the third translator in OCaml with GOSPEL/Cameleer, and the PNML importers of
-M7. See [`Implementation/Lean/README.md`](../Lean/README.md) §5 and
-[`Plan.md`](Plan.md) §6.1.
+**M5, the third translator, and the one negative result.**
+[`Implementation/OCaml/`](../OCaml) emits text byte-identical to both others on every fixture
+in both encodings, and **nothing about it is proved**. That is the finding, not a shortfall of
+effort. [`Languages.md`](Languages.md) §3 picks OCaml third because Cameleer promises "verified
+code that is also code somebody would have written anyway", which is the one thing neither Lean
+nor Dafny gives. Cameleer cannot read code somebody would have written: `=` in program code is
+`int` equality, so every compared type needs a hand-written decidable equality — exactly what
+Lean derives and Dafny gives free — six of the standard-library functions the translator uses
+are unknown symbols, and it verifies one file at a time with no usable `open`. Rewriting the
+core into the fragment it accepts cost +280/−106 lines and bought no proof; that rewrite is the
+measurement. See [`Implementation/OCaml/README.md`](../OCaml/README.md) §4 and
+[`Languages.md`](Languages.md) §5.2.
+
+It is worth saying what the three-way comparison did *not* find, because the plan expected it
+to. Obligations 1 to 3 are free in all three technologies, and obligation 4 — the high risk of
+[`Plan.md`](Plan.md) §7 — cost nothing in Lean, nothing in Dafny and nothing in
+[`Proof/`](../../Proof), where M2 discharges it for an arbitrary expression language. The axis
+that separates the three tools is not on the plan's list: it is how much of the language the
+prover can see.
+
+What the third translator does buy is the differential test, now three-way. Six specifications
+— three fixtures, two encodings — identical across three developments that share no code and
+were written against these documents rather than against each other.
+
+Not done: the PNML importers of M7, and the proofs of M5. See
+[`Implementation/Lean/README.md`](../Lean/README.md) §5,
+[`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 and [`Plan.md`](Plan.md) §6.1.
 
 Before any of that, M0's hand-written check that the target syntax is real: Example 9 of
 [`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both encodings, both
