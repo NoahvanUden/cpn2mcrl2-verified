@@ -1,0 +1,178 @@
+{
+  "_comment": [
+    "Records, projection and a guard on a projected field: the finite-colour form of",
+    "the jobs fixture. Two tokens, each moved once, so the graph is a diamond."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Status": {
+      "kind": "enum",
+      "ids": [
+        "fresh",
+        "done"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    },
+    "Item": {
+      "kind": "record",
+      "fields": [
+        [
+          "kind",
+          "C"
+        ],
+        [
+          "state",
+          "Status"
+        ]
+      ]
+    }
+  },
+  "variables": {
+    "j": "Item"
+  },
+  "places": {
+    "pending": {
+      "color": "Item",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "rec",
+              "Item",
+              [
+                [
+                  "kind",
+                  [
+                    "ctor",
+                    "a"
+                  ]
+                ],
+                [
+                  "state",
+                  [
+                    "ctor",
+                    "fresh"
+                  ]
+                ]
+              ]
+            ]
+          ],
+          [
+            1,
+            [
+              "rec",
+              "Item",
+              [
+                [
+                  "kind",
+                  [
+                    "ctor",
+                    "b"
+                  ]
+                ],
+                [
+                  "state",
+                  [
+                    "ctor",
+                    "fresh"
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    "archive": {
+      "color": "Item",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "finish": {
+      "guard": [
+        "=",
+        [
+          "proj",
+          [
+            "var",
+            "j"
+          ],
+          "state"
+        ],
+        [
+          "ctor",
+          "fresh"
+        ]
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "pending",
+      "transition": "finish",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "j"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "finish",
+      "place": "archive",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "rec",
+              "Item",
+              [
+                [
+                  "kind",
+                  [
+                    "proj",
+                    [
+                      "var",
+                      "j"
+                    ],
+                    "kind"
+                  ]
+                ],
+                [
+                  "state",
+                  [
+                    "ctor",
+                    "done"
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

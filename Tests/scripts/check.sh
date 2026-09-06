@@ -130,7 +130,12 @@ while read -r tier name summands params want_states want_edges <&3; do
     case " $only " in *" $name "*) ;; *) continue;; esac
   fi
 
-  net="$here/corpus/$tier/$name.cpn.json"
+  # Tier 3 is the translators' own fixtures, read where they live rather than copied,
+  # so that there is one copy of each net. Corpus.md 4.
+  case "$tier" in
+    tier3) net="$root/Implementation/Lean/fixtures/$name.cpn.json" ;;
+    *)     net="$here/corpus/$tier/$name.cpn.json" ;;
+  esac
   if [ ! -f "$net" ]; then
     echo "== $name =="; report "corpus" "MISSING $net"; fail=1; continue
   fi

@@ -1,0 +1,176 @@
+{
+  "_comment": [
+    "A record with a record field, so that both the sort declaration and the",
+    "projection nest. InputFormat.md 4.1 allows it and nothing else tests it."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Status": {
+      "kind": "enum",
+      "ids": [
+        "fresh",
+        "done"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    },
+    "Inner": {
+      "kind": "record",
+      "fields": [
+        [
+          "tag",
+          "C"
+        ],
+        [
+          "state",
+          "Status"
+        ]
+      ]
+    },
+    "Outer": {
+      "kind": "record",
+      "fields": [
+        [
+          "inner",
+          "Inner"
+        ],
+        [
+          "flag",
+          "Bool"
+        ]
+      ]
+    }
+  },
+  "variables": {
+    "w": "Outer"
+  },
+  "places": {
+    "p1": {
+      "color": "Outer",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "rec",
+              "Outer",
+              [
+                [
+                  "inner",
+                  [
+                    "rec",
+                    "Inner",
+                    [
+                      [
+                        "tag",
+                        [
+                          "ctor",
+                          "a"
+                        ]
+                      ],
+                      [
+                        "state",
+                        [
+                          "ctor",
+                          "fresh"
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "flag",
+                  [
+                    "bool",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "=",
+        [
+          "proj",
+          [
+            "proj",
+            [
+              "var",
+              "w"
+            ],
+            "inner"
+          ],
+          "state"
+        ],
+        [
+          "ctor",
+          "fresh"
+        ]
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "w"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "proj",
+              [
+                "proj",
+                [
+                  "var",
+                  "w"
+                ],
+                "inner"
+              ],
+              "tag"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

@@ -179,12 +179,16 @@ def read_oracle(markings_path, aut_path):
 
 
 def normalise_oracle_marking(text):
-    """Sort the oracle's own line, so neither side depends on emission order."""
+    """Sort the oracle's own line, so neither side depends on emission order.
+
+    The split has to respect brackets: a record value is written `(a,fresh)`, and
+    splitting its bag on every comma turns two tokens into three nonsense ones.
+    """
     cells = []
     for cell in text.split():
         place, bag = cell.split("=", 1)
         body = bag[1:-1]
-        items = [x for x in body.split(",") if x]
+        items = [x for x in split_top(body) if x]
         cells.append("%s={%s}" % (place, ",".join(sorted(items))))
     return " ".join(sorted(cells))
 

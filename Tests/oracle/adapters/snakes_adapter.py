@@ -99,13 +99,32 @@ class Compiler:
     def _record_color_of(self, e):
         """The record colour a projection is taken out of.
 
-        Only the cases the native format permits: a variable, or a nested record.
+        Recurses through projections, so that a record field which is itself a record
+        can be projected twice -- `InputFormat.md` 4.1 allows a record field to name any
+        colour, records included.
         """
+        c = self._color_of(e)
+        if c not in self.field_index:
+            raise Unsupported("projection out of %r, which is not a record colour" % c)
+        return c
+
+    def _color_of(self, e):
+        """The declared colour of a colour-valued expression."""
         if self.is_var(e):
             return self.variables[e[1]]
-        if isinstance(e, list) and e and e[0] == "rec":
+        if not isinstance(e, list) or not e:
+            raise Unsupported("malformed expression %r" % (e,))
+        if e[0] == "rec":
             return e[1]
-        raise Unsupported("projection out of an expression that is not a record")
+        if e[0] == "proj":
+            base = self._color_of(e[1])
+            for fname, fcolor in self.colors[base]["fields"]:
+                if fname == e[2]:
+                    return fcolor
+            raise Unsupported("the record %s has no field %s" % (base, e[2]))
+        if e[0] == "ctor":
+            return self.ctor_owner[e[1]]
+        raise Unsupported("cannot determine the colour of %r" % (e[0],))
 
     def term(self, e):
         """One token's worth of arc inscription, as a SNAKES annotation."""
