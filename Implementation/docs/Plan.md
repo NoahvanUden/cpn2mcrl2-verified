@@ -61,12 +61,12 @@ Each link admits a different kind of guarantee.
 
 | Tier | Claim | Established by | Status |
 | --- | --- | --- | --- |
-| **T0** | The emitted text is accepted by `mcrl22lps` | Running the tool | Tested on every fixture, both encodings, both translators |
-| **T1** | The parsed structure is a CPN satisfying Definition 5 | Runtime validation, once at the boundary | Done twice (M3, M4) |
+| **T0** | The emitted text is accepted by `mcrl22lps` | Running the tool | Tested on every fixture, both encodings, all three translators |
+| **T1** | The parsed structure is a CPN satisfying Definition 5 | Runtime validation, once at the boundary | Done three times (M3, M4, M5); in the first two the predicate checked is also the hypothesis the T2 proofs run on |
 | **T2** | The emitted LPE term *denotes* the $c_t$ and $g_t$ of Definition 14 | Proof, in the implementation language | Done twice (M3, M4), and once in [`Proof/`](../../Proof) for an arbitrary expression language (M2) |
 | **T3** | Definition 14's LPE is bisimilar to the reachability graph | Theorem 1, `CPN.bisimulation_transRel` | Proved. Composed with T2 in Lean only |
 | **T4** | The text `mcrl22lps` reads back denotes the term that was emitted | Not provable without a formalized mCRL2 grammar | Tested only, by design |
-| **T5** | The list encoding refines the bag encoding | Was unproved anywhere; required by the fast output | Proved twice (M6, M4) |
+| **T5** | The list encoding refines the bag encoding | Was unproved anywhere; required by the fast output | Proved twice (M6, M4); emitted a third time without proof (M5) |
 
 **T2 composed with T3 is the theorem the project is for**: *the specification this program
 prints denotes an LTS bisimilar to the CPN's reachability graph.* T3 was done before this
@@ -231,7 +231,7 @@ that lemma exists, the fast output is exactly as justified as the reference impl
 which is to say not at all.
 
 **How it turned out.** M6 is done, and so is the same refinement in Dafny. Of the two
-refinements above, *typing* was discharged by construction rather than proved: both
+refinements above, *typing* was discharged by construction rather than proved: all three
 translators emit `List(C(p))`, one list sort per place at that place's own color, instead of
 the reference generator's shared tagged union, so there is no invariant left to preserve.
 *Order* is the lemma, and it is proved — `Net.listRel` relates a list marking to a bag marking
@@ -257,9 +257,9 @@ direction to check first.
 | **M2** | The formalization made syntactic. `ExprTy` gains products, the expression language gains the Definition 14 operations with their evaluation equations, `toLPE_cond` becomes a theorem. | [§4](#4-the-proof-obligations-concretely) | T2, in Lean | Done, differently, and last |
 | **M3** | Verified translator **#1, Lean 4**. Compiled to a binary, differential-tested against M1. | M2 | T2 with T3 | Done |
 | **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
-| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Done, as a negative result: the translator, and the reason it is not verified |
+| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T0 only; T2 not reached | Done, as a negative result: the translator, and the reason it is not verified |
 | **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
-| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M1 | broader T1 | Not started |
+| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M3 (M1 is gone) | broader T1 | Not started |
 
 M0 through M3 are the spine. M4 and M5 are what the multiple languages are for: the same
 obligations discharged by SMT automation and by a mainstream functional toolchain, which is the
@@ -305,6 +305,23 @@ than carried through the specification layer, on the grounds that finishing woul
 obligation 4 free a fourth time and change nothing else. See
 [`Implementation/OCaml/README.md`](../OCaml/README.md) §4 and §6.1, the second of which records
 what finishing would take.
+
+### 6.2 What is left
+
+**M7 is the only open milestone.** Nothing in any of the three translators reads PNML; each
+consumes only the native format of [`InputFormat.md`](InputFormat.md) §4, and the measurement
+§2.3 there asks for — how much of the Model Checking Contest corpus falls inside that
+expression language — has not been made. Its dependency in the table above was M1, which no
+longer exists; what it actually needs is a translator to feed, and there are three.
+
+**M5's proofs are closed rather than pending**, on the grounds
+[`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 records. That section also records
+what reopening them would take, so the decision is reversible if Cameleer changes.
+
+**Everything else is done, and the differential test is the thing that keeps it honest.** All
+six emitted specifications — three fixtures, two encodings — are byte-identical across the
+three translators, and each directory's `scripts/check.sh` rechecks that together with T0 and
+T4 against mCRL2 202307.1.
 
 ---
 

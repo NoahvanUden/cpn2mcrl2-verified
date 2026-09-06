@@ -215,9 +215,10 @@ compares two verified developments and a program.
 
 ## 6. What is not here
 
-**Every proof.** [`Plan.md`](../docs/Plan.md) §6.1 records M5 as partially done for that
-reason. `semantics.ml` exists so that the T2 statement would have a left-hand side, and it has
-no right-hand side to be equated with.
+**Every proof.** [`Plan.md`](../docs/Plan.md) §6.1 records M5 as done and unverified for that
+reason, and §6.2 there records the proofs as closed rather than pending. `semantics.ml` exists
+so that the T2 statement would have a left-hand side, and it has no right-hand side to be
+equated with.
 
 **The composition with Theorem 1**, for the same reason it is absent from
 [`Implementation/Dafny/`](../Dafny): Theorem 1 is a Lean term.
