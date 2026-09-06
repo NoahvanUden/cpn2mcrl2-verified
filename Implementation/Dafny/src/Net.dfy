@@ -51,14 +51,14 @@
  * * `Valid` : the T1 checks of `InputFormat.md` 4.3.
  * * `Pre`, `Post`, `VarOf` : `pre(t)`, `post(t)` and `Var(t)`.
  */
-module Net {
+module Nets {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
+  import opened Exprs
 
   /** A place, with its color and its initialization expression `I(p)`. */
   datatype PlaceDecl = PlaceDecl(pname: string, pcolor: Color, pinit: Expr)

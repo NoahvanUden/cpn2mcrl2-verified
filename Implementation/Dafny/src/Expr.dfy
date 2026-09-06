@@ -59,12 +59,12 @@
  * * `FreeVars`, `ScopedIn` : `VAR[e]`, and check 7 of `InputFormat.md` 4.3.
  * * `EvalCongr` : obligation 4 of `Plan.md` 4.
  */
-module Expr {
+module Exprs {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
 
   /** The type of an expression: a color `c`, the bag of a color -- written `c_MS` in the

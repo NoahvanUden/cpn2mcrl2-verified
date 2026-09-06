@@ -33,13 +33,13 @@ module PrintList {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
-  import opened Net
+  import opened Exprs
+  import opened Nets
   import opened Semantics
-  import opened Lpe
+  import opened Lpes
   import opened Translate
   import opened Correct
   import opened ListEncoding

@@ -34,11 +34,11 @@
  * normalized -- `Union` is concatenation -- so the translator never has to sort or
  * deduplicate anything.
  */
-module Bag {
+module Bags {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
+  import opened Colors
 
   /** **Definition 1 (Bag)**, finitely supported: a sequence of `(item, coefficient)` entries.
     *

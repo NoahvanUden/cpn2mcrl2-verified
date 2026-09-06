@@ -51,11 +51,11 @@ module Semantics {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
-  import opened Net
+  import opened Exprs
+  import opened Nets
 
   /** A marking: a bag of tokens for every place. */
   type Marking = string -> Bag

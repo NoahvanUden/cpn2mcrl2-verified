@@ -29,8 +29,8 @@ module ListOps {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
 
   /** The number of times `v` occurs in `l`. */
   function CountOf(l: seq<Value>, v: Value): nat

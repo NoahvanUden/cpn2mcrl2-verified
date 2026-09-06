@@ -41,10 +41,10 @@ module Typing {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
+  import opened Exprs
 
   /** Under an environment well-typed on its free variables, a term of sort `t` evaluates to a
     * denotation of sort `t`.

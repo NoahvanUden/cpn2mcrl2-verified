@@ -63,13 +63,13 @@ module Print {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
-  import opened Net
+  import opened Exprs
+  import opened Nets
   import opened Semantics
-  import opened Lpe
+  import opened Lpes
   import opened Translate
 
   /** The name the emitted process is given. Reserved along with the keywords, so that no place,

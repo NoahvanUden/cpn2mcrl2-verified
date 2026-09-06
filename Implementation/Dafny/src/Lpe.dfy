@@ -45,15 +45,15 @@
  * * `Lpe`, `Summand` : Definition 13, syntactically.
  * * `LpeStep` : Definition 15, the transition relation the specification denotes.
  */
-module Lpe {
+module Lpes {
 
   import opened Std.Wrappers
   import opened Util
-  import opened Color
-  import opened Bag
+  import opened Colors
+  import opened Bags
   import opened ListOps
-  import opened Expr
-  import opened Net
+  import opened Exprs
+  import opened Nets
   import opened Semantics
 
   /** A term of bag sort, with the color it is a bag of.

@@ -32,7 +32,7 @@
  * As in Lean, and for the same reason: the translator never evaluates, so values appear only
  * in the *statement* of the T2 theorems. `ValueOfColor` is the typing judgement.
  */
-module Color {
+module Colors {
 
   import opened Std.Wrappers
   import opened Util
