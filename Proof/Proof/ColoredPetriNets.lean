@@ -141,8 +141,12 @@ theorem vars_Eout_subset {p : P} {t : T} (h : (t, p) ∈ N.outArc) :
   fun _ hx => Or.inr (Set.mem_iUnion.2 ⟨p, Set.mem_iUnion.2 ⟨h, hx⟩⟩)
 
 /-- `B(t)`, the bindings of a transition `t`: the bindings of all its free variables. A
-binding element `(t, b)` is a transition `t` together with a `b : N.TransBinding t`. -/
-def TransBinding (t : T) : Type _ := L.Binding (N.Var t)
+binding element `(t, b)` is a transition `t` together with a `b : N.TransBinding t`.
+
+Marked `@[reducible]`, like `ExprTy.Value`, so that a binding of `t` is recognised as a
+binding of `Var(t)` without unfolding: the evaluation equations of `CPN.Term` and `CPN.Cond`
+are stated for an arbitrary set of variables and applied to `Var(t)`. -/
+@[reducible] def TransBinding (t : T) : Type _ := L.Binding (N.Var t)
 
 variable {N}
 
