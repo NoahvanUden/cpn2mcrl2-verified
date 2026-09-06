@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "The order problem of Implementation/docs/Plan.md 5, over finite colours: one",
+    "place holding two distinct tokens, drained in either order.",
+    "",
+    "Under the bag encoding the two orders reach the same marking, so the graph",
+    "is a diamond of four states. Under the list encoding they are two distinct",
+    "states with the same underlying bag, so expect five states and bisimilarity",
+    "anyway. That is the refinement Plan.md 5 is about."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "p1": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ],
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "bool",
+        true
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

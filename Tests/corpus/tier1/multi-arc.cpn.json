@@ -1,0 +1,110 @@
+{
+  "_comment": [
+    "A bag-valued arc over distinct colours: one a and one b consumed in a single",
+    "firing. Question 3 of Tests/docs/Oracle.md 3.1, which is whether the oracle",
+    "can express an arc that carries more than one token."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "p1": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ],
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "bool",
+        true
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ],
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ],
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

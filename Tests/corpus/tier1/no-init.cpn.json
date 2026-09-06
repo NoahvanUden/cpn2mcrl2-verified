@@ -1,0 +1,79 @@
+{
+  "_comment": [
+    "Every place empty. Nothing is enabled, so the reachability graph is the",
+    "initial marking alone and the LTS has no edges at all."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "p1": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "bool",
+        true
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

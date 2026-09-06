@@ -1,0 +1,102 @@
+{
+  "_comment": [
+    "A guard that selects among bindings rather than blocking all of them: two",
+    "tokens are present and only the one equal to a may move."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "p1": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ],
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "=",
+        [
+          "var",
+          "h"
+        ],
+        [
+          "ctor",
+          "a"
+        ]
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

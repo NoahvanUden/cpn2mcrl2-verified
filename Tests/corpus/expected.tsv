@@ -1,0 +1,31 @@
+# The corpus, and what every net is expected to produce.
+#
+# Per Tests/docs/Corpus.md 2.1:
+#
+#   summands  |T| + 1 -- one per transition, plus mCRL2's delta.  Target.md 2:
+#             "If not, what was emitted was not an LPE."
+#   params    |P|.
+#   states    the reachability graph of Definition 9, computed by hand.
+#   edges     its transitions, likewise.
+#
+# states and edges are checked against the translators AND against the oracle, which
+# is what makes a person's arithmetic a third opinion rather than a fourth guess.
+# Every tier-1 count below was written down before either machine was run.
+#
+# A dash means "not computed by hand": tier 2 and tier 3 nets are past the point where
+# hand-computing is honest, which is exactly why tier 1 has to be green first.
+#
+# tier  net             summands  params  states  edges
+tier1   one-step        2         2       2       1
+tier1   no-init         2         2       1       0
+tier1   dead            2         2       1       0
+tier1   guard-select    2         2       2       1
+tier1   shared-var      2         3       2       1
+tier1   two-in          2         3       2       1
+tier1   conflict        3         3       3       2
+tier1   independent     3         4       4       4
+tier1   two-tokens      2         2       4       4
+tier1   multiplicity    2         2       2       1
+tier1   multi-arc       2         2       2       1
+tier1   bool-flip       2         1       2       2
+tier1   enum-cycle      4         1       3       3

@@ -1,0 +1,88 @@
+{
+  "_comment": [
+    "InputFormat.md 4.3 check 1: P and T must be disjoint, and here a place and a",
+    "transition are both called x."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "x": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "x": {
+      "guard": [
+        "bool",
+        true
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "x",
+      "transition": "x",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "x",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

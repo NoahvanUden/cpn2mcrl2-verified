@@ -105,6 +105,14 @@ diff_against() {
   fi
 }
 
+# ltscompare EXITS ZERO whether or not the two LTSs are equal: the verdict is the last
+# line of its stdout, "true" or "false". Written as `if ltscompare ...`, as this script
+# was until Tests/ found it, the check passes unconditionally: it reported every pair as
+# bisimilar, including a pair that is not. See Tests/docs/Findings.md 1.
+bisim() {
+  [ "$("$MCRL2_BIN/ltscompare" -ebisim "$1" "$2" 2>/dev/null </dev/null | tail -1)" = "true" ]
+}
+
 # Carriage returns are stripped from both sides of the shape comparison below. On Windows
 # git checks expected.tsv out with CRLF, and the Windows build of lpsinfo writes CRLF; the
 # two counts used to agree only because both carried a stray CR, so stripping one side
@@ -152,7 +160,7 @@ while read -r name summands params; do
   done
 
   if [ -f "fixtures/$name.aut" ]; then
-    if "$MCRL2_BIN/ltscompare" -ebisim "fixtures/$name.aut" "out/$name.aut" >/dev/null 2>&1; then
+    if bisim "fixtures/$name.aut" "out/$name.aut"; then
       report "lts" "bisimilar to the golden LTS"
     else
       report "lts" "DIFFERS from fixtures/$name.aut"
@@ -167,7 +175,7 @@ while read -r name summands params; do
   states_of() { head -1 "$1" | tr -d ' \r' | sed 's/.*,\([0-9]*\))$/\1/'; }
   bagstates="$(states_of "out/$name.aut")"
   liststates="$(states_of "out/$name.list.aut")"
-  if "$MCRL2_BIN/ltscompare" -ebisim "out/$name.aut" "out/$name.list.aut" >/dev/null 2>&1; then
+  if bisim "out/$name.aut" "out/$name.list.aut"; then
     if [ "$bagstates" = "$liststates" ]; then
       report "refinement" "bisimilar to the bag encoding ($bagstates states each)"
     else

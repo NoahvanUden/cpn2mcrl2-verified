@@ -1,0 +1,148 @@
+{
+  "_comment": [
+    "Two disjoint one-step nets in one file, so the two transitions interleave.",
+    "The graph is a diamond: a translation that serialised them would give a",
+    "chain, and bisimilarity would catch it."
+  ],
+  "colors": {
+    "C": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C"
+  },
+  "places": {
+    "p1": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ]
+        ]
+      ]
+    },
+    "p2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    },
+    "q1": {
+      "color": "C",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    },
+    "q2": {
+      "color": "C",
+      "init": [
+        "emptyBag"
+      ]
+    }
+  },
+  "transitions": {
+    "t": {
+      "guard": [
+        "bool",
+        true
+      ]
+    },
+    "u": {
+      "guard": [
+        "bool",
+        true
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p1",
+      "transition": "t",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "place": "q1",
+      "transition": "u",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "t",
+      "place": "p2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "transition": "u",
+      "place": "q2",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}

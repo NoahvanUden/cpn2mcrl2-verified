@@ -63,6 +63,15 @@ if [ -z "$LEAN_BIN" ]; then
 fi
 
 mkdir -p out
+
+# ltscompare EXITS ZERO whether or not the two LTSs are equal: the verdict is the last
+# line of its stdout, "true" or "false". Written as `if ltscompare ...`, as this script
+# was until Tests/ found it, the check passes unconditionally and reports every pair as
+# bisimilar. See Tests/docs/Findings.md 1.
+bisim() {
+  [ "$("$MCRL2_BIN/ltscompare" -ebisim "$1" "$2" 2>/dev/null | tail -1)" = "true" ]
+}
+
 fail=0
 
 report() { printf '  %-16s %s\n' "$1" "$2"; }
@@ -126,7 +135,7 @@ while read -r name summands params; do
   done
 
   if [ -f "fixtures/$name.aut" ]; then
-    if "$MCRL2_BIN/ltscompare" -ebisim "fixtures/$name.aut" "out/$name.aut" >/dev/null 2>&1; then
+    if bisim "fixtures/$name.aut" "out/$name.aut"; then
       report "lts" "bisimilar to the golden LTS"
     else
       report "lts" "DIFFERS from fixtures/$name.aut"
@@ -141,7 +150,7 @@ while read -r name summands params; do
   states_of() { head -1 "$1" | tr -d ' \r' | sed 's/.*,\([0-9]*\))$/\1/'; }
   bagstates="$(states_of "out/$name.aut")"
   liststates="$(states_of "out/$name.list.aut")"
-  if "$MCRL2_BIN/ltscompare" -ebisim "out/$name.aut" "out/$name.list.aut" >/dev/null 2>&1; then
+  if bisim "out/$name.aut" "out/$name.list.aut"; then
     if [ "$bagstates" = "$liststates" ]; then
       report "refinement" "bisimilar to the bag encoding ($bagstates states each)"
     else
@@ -152,7 +161,11 @@ while read -r name summands params; do
     report "refinement" "NOT bisimilar to the bag encoding"
     fail=1
   fi
-done < fixtures/expected.tsv
+# The corpus list is filtered through `tr -d '\r'`: on a Windows checkout the file
+# arrives with CRLF, the last field of every row then ends in a carriage return, and
+# the shape comparison can never match -- it prints "expected 4 and 3, got 4 and 3"
+# and fails. See Tests/docs/Findings.md 2.
+done < <(tr -d '\r' < fixtures/expected.tsv)
 
 for bad in fixtures/rejected/*.cpn.json; do
   [ -e "$bad" ] || continue

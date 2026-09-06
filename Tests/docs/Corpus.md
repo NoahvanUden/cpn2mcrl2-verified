@@ -125,19 +125,23 @@ all three translators, naming the check that failed:
 
 | Check | Net | Violation |
 | --- | --- | --- |
-| 1 | `dangling-arc` | An arc naming a place that does not exist |
+| 1 | `dangling-arc` | An out-arc naming a place that does not exist |
 | 1 | `name-clash` | A place and a transition sharing a name |
-| 2 | `badcolor` | A colour referenced but not declared — **exists today** |
-| 3 | `untyped-var` | A variable whose type is not in $\Sigma$ |
+| 2 | `undeclared-color` | A place typed with a colour the net never declares |
+| 3 | `untyped-var` | A variable declared at a colour not in $\Sigma$ |
 | 4 | `guard-not-bool` | A guard whose type is an enumeration |
-| 5 | `arc-wrong-color` | An arc expression whose colour is not the place's |
+| 5 | `badcolor` | An arc expression whose colour is not its place's — **exists today** |
 | 6 | `openinit` | An initial marking with a free variable — **exists today** |
 | 6 | `init-wrong-color` | An initial marking of the wrong colour |
-| 7 | `shadow` | A transition variable not in $V$ — **exists today** |
+| 7 | `undeclared-var` | An arc using a variable that is not in $V$ |
+| — | `shadow` | A place and a variable sharing a name — `Net.Valid.namesDisjoint`, which is an *addition* to Definition 4 rather than one of the seven — **exists today** |
+| — | `keyword` | `val` as an identifier, which is [`Target.md`](../../Implementation/docs/Target.md) §1 rather than a §4.3 check — **exists today** |
 
-The three marked ones are the existing `fixtures/rejected/`, which move here or are duplicated
-here; `keyword.cpn.json`, the fourth, tests an mCRL2 keyword used as an identifier, which is a
-printer concern rather than a §4.3 check and stays where it is.
+> **Corrected.** An earlier version of this table put `badcolor` at check 2, `shadow` at check 7, and did not distinguish `keyword` from the §4.3 list. All three were wrong: the table was written from `InputFormat.md` §4.3 without opening the fixtures it classified. See [`Findings.md`](Findings.md) §7.
+
+The four marked ones are the existing `Implementation/*/fixtures/rejected/`, copied here so
+that this corpus is self-contained; they stay there too, because each translator's own smoke
+test should keep working without this directory being present.
 
 A rejected net is a test of the *validator*, so it needs no oracle. Where the oracle happens to
 reject the same net, a disagreement about which nets are well-formed is a finding about how far a

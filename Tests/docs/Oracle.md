@@ -25,10 +25,11 @@ An oracle adapter is a program. Given one corpus net, it writes two files and ex
 
 ### 2.1 Input
 
-The corpus net, in the corpus's canonical format — PNML if
-[`Plan.md`](Plan.md) §3 succeeds, the native JSON of
-[`InputFormat.md`](../../Implementation/docs/InputFormat.md) §4 otherwise. The adapter is told
-which, and it is allowed to read only that file.
+The corpus net, in the corpus's canonical format. [`Plan.md`](Plan.md) §3 wanted that to be
+PNML, so that both sides would read one file independently; [§3.2](#32-the-record) settled it
+the other way, so it is the native JSON of
+[`InputFormat.md`](../../Implementation/docs/InputFormat.md) §4. The adapter is allowed to read
+only that file.
 
 ### 2.2 Output: `<name>.oracle.aut`
 
@@ -56,9 +57,11 @@ Optional, and worth a lot when it is available: one line per state, mapping the 
 in the `.aut` to the marking it stands for.
 
 ```
-0  p1={1`a}  p2={}
-1  p1={}     p2={1`a}
+0  p1={a^1} p2={}
+1  p1={} p2={a^1}
 ```
+
+`value^count`, sorted by value, places sorted by name.
 
 This is what feeds leg B2 of [`Plan.md`](Plan.md) §6.2, where the same information is recovered
 from the mCRL2 side with `lps2lts -ofsm`. The two notations will not match textually — one is the
@@ -115,9 +118,55 @@ In order, cheapest first. Stop at the first "no" and consult [§4](#4-if-it-does
 
 ### 3.2 The record
 
-To be filled in by E1, in this section, whatever the answer is. A negative result here is worth as
-much as a positive one, and [`Implementation/OCaml/README.md`](../../Implementation/OCaml/README.md)
-§4 is the model for how to write it down: what was tried, what the tool did, and what that cost.
+SNAKES 0.9.33, Python 3.12, in `Tests/.venv`. **It is the oracle**, and it answered the six
+questions of §3.1 as follows.
+
+**1. It installs and runs.** `pip install snakes` builds a wheel on Python 3.12 without a
+patch, despite the library predating it by a decade.
+
+**2. Its PNML is its own, and this is the finding that decided the architecture.** Asked to
+serialise a two-place net, it writes
+
+```xml
+<pnml>
+ <net id="onestep">
+  <place id="p1">
+   <type domain="universal"/>
+   <initialMarking><multiset><item><value>
+     <object type="str">a</object>
+   </value><multiplicity>1</multiplicity></item></multiset></initialMarking>
+```
+
+with no `xmlns`, no `<page>`, no `<declarations>`, and Python objects where ISO/IEC 15909-2 has
+sort declarations. That is a serialisation of SNAKES' own data structures, not the interchange
+format, so the two sides cannot read one corpus file. **The corpus is native JSON and the
+adapter builds the net**, which is the fallback [`Plan.md`](Plan.md) §3 names.
+
+**3. Multiple tokens on one arc: yes.** `MultiArc([Value('a'), Value('b')])` consumes both in a
+single firing, and `MultiArc` of two copies of one value handles a multiplicity above one.
+
+**4. A colour set per place: not really, and it does not matter here.** SNAKES types a place
+with a `check` predicate rather than with a colour set, so Definition 5's $C(p)$ has no direct
+counterpart. The adapter therefore leaves places untyped and lets the *net* constrain what
+reaches them, which is sound because the T1 validation has already established
+$\mathrm{Type}[E(a)] = C(p)_{\mathrm{MS}}$ before the oracle ever sees the net. The oracle
+consequently cannot catch a colour error, and it is not asked to: that is leg D's job.
+
+**5. Enabling and firing agree with Definitions 6 to 8** on every shape tier 1 exercises,
+including `shared-var`, where one variable is constrained by two in-arcs at once and only the
+colour held by both places may fire.
+
+**6. The state graph comes out.** `StateGraph.build()`, then `successors()` per state, yields
+`(target, transition, substitution)` — exactly the contract, with the substitution to be
+discarded.
+
+**One divergence worth writing down, which the corpus stays clear of.** SNAKES binds variables
+by matching tokens present in the input places, where Definition 6 quantifies over *all*
+bindings of $\mathrm{Var}(t)$. The two agree whenever every variable of a transition occurs in
+some in-arc expression, which is every net here. A variable appearing only in a guard or only
+on an out-arc would be enumerated by Definition 6 and unbindable by SNAKES — so a net like that
+is outside what this oracle can judge, and would have to be reported as unsupported rather than
+compared.
 
 ---
 

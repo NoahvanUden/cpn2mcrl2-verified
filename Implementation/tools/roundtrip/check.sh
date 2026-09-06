@@ -95,10 +95,13 @@ for name in counter multitoken jobs; do
   # jobs is checked up to bisimilarity instead, which is the whole of what standard
   # PNML can deliver for it.
   if [ "$name" = jobs ] && [ -n "$MCRL2_BIN" ]; then
+    # ltscompare exits zero either way; the verdict is the last line of its stdout.
+    # See Tests/docs/Findings.md 1.
     if "$MCRL2_BIN/mcrl22lps" -q "$out/jobs.lean.mcrl2" "$out/jobs.lps" 2>/dev/null &&
        "$MCRL2_BIN/lps2lts" -q "$out/jobs.lps" "$out/jobs.aut" 2>/dev/null &&
-       "$MCRL2_BIN/ltscompare" -ebisim "$root/Implementation/Lean/fixtures/jobs.aut" \
-          "$out/jobs.aut" >/dev/null 2>&1; then
+       [ "$("$MCRL2_BIN/ltscompare" -ebisim \
+            "$root/Implementation/Lean/fixtures/jobs.aut" "$out/jobs.aut" \
+            2>/dev/null | tail -1)" = "true" ]; then
       report "bisimilar" "to the jobs golden LTS"
     else
       report "bisimilar" "NOT bisimilar to the jobs golden LTS"

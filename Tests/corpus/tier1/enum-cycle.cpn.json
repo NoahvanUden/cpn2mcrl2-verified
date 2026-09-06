@@ -1,0 +1,181 @@
+{
+  "_comment": [
+    "A longer cycle, and three summands. The successor of an enumeration is not",
+    "in InputFormat.md 4.1, so the step is written as three guarded transitions",
+    "rather than as a function."
+  ],
+  "colors": {
+    "C3": {
+      "kind": "enum",
+      "ids": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "Bool": {
+      "kind": "bool"
+    }
+  },
+  "variables": {
+    "h": "C3"
+  },
+  "places": {
+    "p": {
+      "color": "C3",
+      "init": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ]
+        ]
+      ]
+    }
+  },
+  "transitions": {
+    "tab": {
+      "guard": [
+        "=",
+        [
+          "var",
+          "h"
+        ],
+        [
+          "ctor",
+          "a"
+        ]
+      ]
+    },
+    "tbc": {
+      "guard": [
+        "=",
+        [
+          "var",
+          "h"
+        ],
+        [
+          "ctor",
+          "b"
+        ]
+      ]
+    },
+    "tca": {
+      "guard": [
+        "=",
+        [
+          "var",
+          "h"
+        ],
+        [
+          "ctor",
+          "c"
+        ]
+      ]
+    }
+  },
+  "inArcs": [
+    {
+      "place": "p",
+      "transition": "tab",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "place": "p",
+      "transition": "tbc",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "place": "p",
+      "transition": "tca",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "var",
+              "h"
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "outArcs": [
+    {
+      "transition": "tab",
+      "place": "p",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "b"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "transition": "tbc",
+      "place": "p",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "c"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "transition": "tca",
+      "place": "p",
+      "expr": [
+        "bag",
+        [
+          [
+            1,
+            [
+              "ctor",
+              "a"
+            ]
+          ]
+        ]
+      ]
+    }
+  ]
+}
