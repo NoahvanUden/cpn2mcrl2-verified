@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "The fixture Implementation/docs/Target.md 4.1 asks for: a place holding several tokens,",
+    "moved out of it in either order.",
+    "",
+    "  Example 9 never puts more than one token in a place, so its bisimilarity result says",
+    "  nothing about the order problem of Plan.md 5. The first genuinely informative fixture",
+    "  is a net that holds several tokens in one place, produced in different orders.",
+    "",
+    "Under the bag encoding the two orders reach the same marking, so the reachability graph",
+    "is a diamond of four states. Under the list encoding of Target.md 3 they would be two",
+    "distinct states with the same underlying bag, which is exactly the refinement Plan.md 5",
+    "says nobody has proved. Keeping the fixture here means the day that backend is written",
+    "the comparison is one ltscompare away."
+  ],
+  "colors": {
+    "Int":  { "kind": "int" },
+    "Bool": { "kind": "bool" }
+  },
+  "variables": { "h": "Int" },
+  "places": {
+    "src": { "color": "Int", "init": ["bag", [[1, ["int", 1]], [1, ["int", 2]]]] },
+    "dst": { "color": "Int", "init": ["emptyBag"] }
+  },
+  "transitions": {
+    "move": { "guard": ["bool", true] }
+  },
+  "inArcs": [
+    { "place": "src", "transition": "move", "expr": ["bag", [[1, ["var", "h"]]]] }
+  ],
+  "outArcs": [
+    { "transition": "move", "place": "dst", "expr": ["bag", [[1, ["var", "h"]]]] }
+  ]
+}
