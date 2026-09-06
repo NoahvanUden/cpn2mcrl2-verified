@@ -166,7 +166,67 @@ it claimed to classify.
 
 ---
 
-## 8. What the oracle confirmed
+## 8. Two enumerations sharing a constructor name emit text mCRL2 refuses
+
+**Severity: high. A defect in all three translators, found by the random search, and
+invisible to every other check in the repository.**
+
+A net may declare two enumerations that share a constructor:
+
+```json
+"C2": { "kind": "enum", "ids": ["a", "b"] },
+"C3": { "kind": "enum", "ids": ["a", "c"] }
+```
+
+Nothing forbids it. Definition 5's colour sets are sets, and two sets may both contain an
+element called $a$; [`InputFormat.md`](../../Implementation/docs/InputFormat.md) §4.1 says a
+colour is `enum(name, [id, ...])` without any condition relating one enumeration's identifiers
+to another's; and none of the seven T1 checks of §4.3 mentions it. All three translators
+therefore accept the net and emit
+
+```
+sort C2 = struct a | b;
+sort C3 = struct a | c;
+```
+
+which `mcrl22lps` refuses:
+
+```
+[error]   Double declaration of constructor constant a.
+[error]   Type checking of data expression failed.
+```
+
+**Why nothing caught it.** Leg A is blind by construction — all three translators emit the
+same bytes, because all three read the same specification and the specification does not
+mention the problem. No fixture in the repository declares two enumerations at all: `counter`
+and `multitoken` have only `Int` and `Bool`, and `jobs` has a single `Status`. It took a
+generator that does not know what nets are supposed to look like: seven of the first thirty
+seeds produced it.
+
+**It is T0, the cheapest tier, and it is exactly what T0 is for.**
+[`Plan.md`](../../Implementation/docs/Plan.md) §2 calls `mcrl22lps` acceptance "the honest
+ceiling ... cheap and catches everything a printer realistically gets wrong". It did.
+
+**Not fixed here, because the fix is a decision about the project.** Two options, and they are
+not equivalent:
+
+1. **T1 gains a check** that constructor names are globally unique, and such nets are refused
+   at the boundary. Cheap, and consistent with how `Target.md` §1's reserved-keyword check
+   already treats mCRL2's namespace as a constraint on the input. It narrows Definition 5:
+   nets that are perfectly good CPNs become unacceptable input.
+2. **The printer qualifies constructors per sort** — `C2_a`, `C3_a`. Nothing is refused, and
+   Definition 5 is unnarrowed, but every emitted specification changes, so the golden text and
+   the T2 proofs about the printer move with it.
+
+Both change all three translators, and [`CLAUDE.md`](../../CLAUDE.md)'s rule is not to fill a
+gap like this by assumption. The minimal reproducer is kept as
+`corpus/known-failing/shared-ctor.cpn.json`, deliberately outside `expected.tsv` so that the
+harness stays green on what it does cover, and the generator gives its two enumerations
+disjoint constructors so that this one defect does not drown out the rest of the search.
+
+---
+
+## 9. What the oracle confirmed
 
 Not a defect, and the point of the exercise.
 

@@ -38,6 +38,38 @@ and the comparison is against something whose semantics were fixed before this p
 
 ## Status
 
-Nothing is implemented. The plan is written and E0 has not started; E0 is M7 of
-[`Implementation/docs/Plan.md`](../Implementation/docs/Plan.md) §6, which §6.2 there records as
-the only open milestone in that directory.
+**E0 to E5 are done; E6 has its tool and not its corpus.** `scripts/check.sh` is green on 21
+nets — thirteen tier-1, five tier-2, and the three existing fixtures — in both encodings, across
+all three translators, against SNAKES 0.9.33 as the oracle.
+
+What it found is in [`docs/Findings.md`](docs/Findings.md), and the first two are the ones worth
+reading:
+
+1. **`ltscompare` exits zero whether or not the LTSs are equal.** Seven checks across the three
+   translator harnesses were written as `if ltscompare ...`, so the T4 golden-LTS check and the
+   T5 refinement check had been passing unconditionally since they were written. Both claims
+   turn out to be true; nothing was hiding behind it.
+2. **`expected.tsv` is checked out with CRLF**, so the shape check compared `3` with `3\r` and
+   failed on every fixture in the Lean and Dafny harnesses.
+
+One open defect, found by the random search and not fixed here because the fix is a decision
+about the project rather than about this directory: **two enumerations that share a constructor
+name emit text `mcrl22lps` refuses**, in all three translators, and nothing in Definition 5 or
+in the T1 checks forbids the net. See [`docs/Findings.md`](docs/Findings.md) §8, and
+`corpus/known-failing/shared-ctor.cpn.json`.
+
+And the thing the directory exists for: **all three golden LTSs are confirmed by an
+implementation that never read this thesis**, two of which had never been checked against
+anything.
+
+## Running it
+
+```bash
+bash Tests/scripts/check.sh              # the four legs, over the whole corpus
+python Tests/scripts/fuzz.py --runs=50   # random nets, shrunk on failure
+python Tests/scripts/mcc.py <dir>        # how much of a PNML corpus fits
+```
+
+The oracle lives in `Tests/.venv` (`pip install snakes`), so nothing outside this directory
+depends on Python. The OCaml translator is a Linux binary here and is run through `wsl.exe`;
+when neither works the harness reports leg A as comparing two translators rather than failing.

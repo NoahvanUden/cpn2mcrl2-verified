@@ -67,6 +67,7 @@ Each link admits a different kind of guarantee.
 | **T3** | Definition 14's LPE is bisimilar to the reachability graph | Theorem 1, `CPN.bisimulation_transRel` | Proved. Composed with T2 in Lean only |
 | **T4** | The text `mcrl22lps` reads back denotes the term that was emitted | Not provable without a formalized mCRL2 grammar | Tested only, by design |
 | **T5** | The list encoding refines the bag encoding | Was unproved anywhere; required by the fast output | Proved twice (M6, M4); emitted a third time without proof (M5) |
+| **T6** | The reachability graph the fixtures assert is the one an independent implementation computes | Testing, never proof — [`Tests/`](../../Tests/README.md) | Green on 21 nets; it confirmed all three goldens, two of which had never been checked |
 
 **T2 composed with T3 is the theorem the project is for**: *the specification this program
 prints denotes an LTS bisimilar to the CPN's reachability graph.* T3 was done before this
@@ -259,7 +260,7 @@ direction to check first.
 | **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
 | **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T0 only; T2 not reached | Done, as a negative result: the translator, and the reason it is not verified |
 | **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
-| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M3 (M1 is gone) | broader T1 | Not started |
+| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M3 (M1 is gone) | broader T1 | Importer done; the corpus run is not |
 
 M0 through M3 are the spine. M4 and M5 are what the multiple languages are for: the same
 obligations discharged by SMT automation and by a mainstream functional toolchain, which is the
@@ -308,11 +309,24 @@ what finishing would take.
 
 ### 6.2 What is left
 
-**M7 is the only open milestone.** Nothing in any of the three translators reads PNML; each
-consumes only the native format of [`InputFormat.md`](InputFormat.md) §4, and the measurement
-§2.3 there asks for — how much of the Model Checking Contest corpus falls inside that
-expression language — has not been made. Its dependency in the table above was M1, which no
-longer exists; what it actually needs is a translator to feed, and there are three.
+**M7's importer is done and its corpus run is not.**
+[`Implementation/tools/`](../tools/README.md) reads ISO/IEC 15909-2 Symmetric Nets and HLPNG
+into the native format, once rather than three times, because it is outside the trust boundary;
+`counter` and `multitoken` round-trip to byte-identical output through all three translators.
+`jobs` does not, and that is a finding rather than a defect: standard PNML has no projection on
+a product sort, so the same behaviour has to be written as a tuple pattern, which is a different
+net with a bisimilar LTS. See [`tools/README.md`](../tools/README.md) §3.3.
+
+What remains of M7 is the measurement §2.3 of [`InputFormat.md`](InputFormat.md) asks for — how
+much of the Model Checking Contest corpus falls inside the expression language.
+`Tests/scripts/mcc.py` performs it, bucketed by why each file was refused; the corpus itself has
+not been fetched.
+
+**A defect the corpus work found, which is open.** Two enumerations that share a constructor
+name produce text `mcrl22lps` refuses, in all three translators, and nothing in Definition 5 or
+in the T1 checks forbids the net. Fixing it means either narrowing the input at T1 or qualifying
+constructor names in the printer, and both change all three translators. See
+[`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §8.
 
 **M5's proofs are closed rather than pending**, on the grounds
 [`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 records. That section also records

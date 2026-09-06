@@ -61,10 +61,11 @@ It proves nothing. Every guarantee here is a test, and its whole value is in wha
 In the tier vocabulary of [`Plan.md`](../../Implementation/docs/Plan.md) §2 this is a new row,
 and it belongs to the branch no tier currently covers:
 
-> **T6 (proposed).** The reachability graph the fixtures assert is the one an independent implementation of CPN semantics computes. Established by testing, never by proof.
+> **T6.** The reachability graph the fixtures assert is the one an independent implementation of CPN semantics computes. Established by testing, never by proof.
 
-Adding that row is bookkeeping for [E5](#e5--randomised-nets-and-the-bookkeeping), not something
-to do in advance of the evidence.
+That row is now in [`Plan.md`](../../Implementation/docs/Plan.md) §2, added at
+[E5](#e5--randomised-nets-and-the-bookkeeping) once there was evidence for it rather than in
+advance of any.
 
 ### 2.1 The limit built into the comparison
 
@@ -88,8 +89,10 @@ rather than only behaviour.
 ## 3. M7 comes first, and it changes the architecture
 
 [`Plan.md`](../../Implementation/docs/Plan.md) §6 has M7 as "PNML importers, and the Model
-Checking Contest corpus as a test set", and §6.2 records it as the only open milestone. It is
-scheduled first here, and not only because it is outstanding.
+Checking Contest corpus as a test set", and when this was written §6.2 there recorded it as the
+only open milestone. It is scheduled first here, and not only because it was outstanding.
+
+> **How it turned out.** The importer is done and the round trip is green, but the reason for scheduling it first did not survive contact with the oracle: SNAKES writes its own PNML rather than ISO/IEC 15909-2, so the two sides cannot read one corpus file and the corpus is native JSON after all. The paragraphs below are the argument as it was made; [`Findings.md`](Findings.md) §6 is what came of it.
 
 **Without M7**, the corpus is written in the native JSON and something has to build the oracle's
 net from it. That something is a program in this repository, written by the same person, sitting
@@ -249,15 +252,15 @@ nets are well-formed is itself a finding worth recording.
 Each carries a fallback, because the point of the sequencing is that no single hurdle stops the
 plan.
 
-| # | Milestone | Depends on | Exit criterion |
-| --- | --- | --- | --- |
-| **E0** | **M7**: the PNML importer, per [§3.1](#31-what-m7-has-to-deliver-here) | — | The three current fixtures round-trip through PNML to byte-identical output |
-| **E1** | Choose the oracle: spike, contract, adapter | E0 | One tier-1 net, two graphs, one `ltscompare` verdict, by hand |
-| **E2** | The tier-1 corpus: `Bool` and enumerations, small | E1 | Ten to fifteen nets, each with a hand-computed expected state count |
-| **E3** | The harness: legs A to D, one command, CI-shaped | E2 | Green on tier 1, red when a net is deliberately broken |
-| **E4** | The existing fixtures, and tier 2 | E3 | `counter`, `jobs` and `multitoken` pass leg B, or the disagreement is written down |
-| **E5** | Randomised nets within §4.1, with shrinking | E4 | A generator, a seed corpus of survivors, and the T6 row added to `Plan.md` §2 |
-| **E6** | The Model Checking Contest corpus at scale | E0, E5 | The §2.3 measurement, and a run over whatever falls inside the language |
+| # | Milestone | Depends on | Exit criterion | Status |
+| --- | --- | --- | --- | --- |
+| **E0** | **M7**: the PNML importer, per [§3.1](#31-what-m7-has-to-deliver-here) | — | The three current fixtures round-trip through PNML to byte-identical output | **Done**, two of three byte-identical and the third bisimilar, with the reason recorded |
+| **E1** | Choose the oracle: spike, contract, adapter | E0 | One tier-1 net, two graphs, one `ltscompare` verdict, by hand | **Done** — SNAKES 0.9.33, and its PNML settled §3 the other way |
+| **E2** | The tier-1 corpus: `Bool` and enumerations, small | E1 | Ten to fifteen nets, each with a hand-computed expected state count | **Done** — thirteen nets, every count matched |
+| **E3** | The harness: legs A to D, one command, CI-shaped | E2 | Green on tier 1, red when a net is deliberately broken | **Done**, and making it go red is what found [`Findings.md`](Findings.md) §1 and §2 |
+| **E4** | The existing fixtures, and tier 2 | E3 | `counter`, `jobs` and `multitoken` pass leg B, or the disagreement is written down | **Done** — five tier-2 nets, and all three goldens confirmed |
+| **E5** | Randomised nets within §4.1, with shrinking | E4 | A generator, a seed corpus of survivors, and the T6 row added to `Plan.md` §2 | **Done** — and it found [`Findings.md`](Findings.md) §8 |
+| **E6** | The Model Checking Contest corpus at scale | E0, E5 | The §2.3 measurement, and a run over whatever falls inside the language | **Tool written, corpus not fetched** |
 
 ### E0 — M7
 
