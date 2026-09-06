@@ -105,8 +105,14 @@ diff_against() {
   fi
 }
 
+# Carriage returns are stripped from both sides of the shape comparison below. On Windows
+# git checks expected.tsv out with CRLF, and the Windows build of lpsinfo writes CRLF; the
+# two counts used to agree only because both carried a stray CR, so stripping one side
+# alone made a number compare unequal to itself.
 while read -r name summands params; do
   case "$name" in ''|\#*) continue;; esac
+  summands="${summands%$'\r'}"
+  params="${params%$'\r'}"
   echo "== $name =="
 
   for mode in bag list; do
@@ -125,7 +131,7 @@ while read -r name summands params; do
     fi
     report "mcrl22lps $mode" "accepted (T0)"
 
-    info="$("$MCRL2_BIN/lpsinfo" "out/$name$tag.lps" 2>/dev/null)"
+    info="$("$MCRL2_BIN/lpsinfo" "out/$name$tag.lps" 2>/dev/null | tr -d $'\r')"
     got_s="$(printf '%s\n' "$info" | sed -n 's/.*Number of summands *: *\([0-9]*\).*/\1/p')"
     got_p="$(printf '%s\n' "$info" | sed -n 's/.*Number of process parameters *: *\([0-9]*\).*/\1/p')"
     if [ "$got_s" = "$summands" ] && [ "$got_p" = "$params" ]; then
@@ -172,7 +178,7 @@ while read -r name summands params; do
     report "refinement" "NOT bisimilar to the bag encoding"
     fail=1
   fi
-done < fixtures/expected.tsv
+done < <(tr -d '' < fixtures/expected.tsv)
 
 for bad in fixtures/rejected/*.cpn.json; do
   [ -e "$bad" ] || continue
