@@ -60,15 +60,18 @@ Each link admits a different kind of guarantee.
 
 | Tier | Claim | Established by | Status |
 | --- | --- | --- | --- |
-| **T0** | The emitted text is accepted by `mcrl22lps` | Running the tool | Demonstrated by hand for Example 9 |
-| **T1** | The parsed structure is a CPN satisfying Definition 5 | Runtime validation, once at the boundary | To build |
-| **T2** | The emitted LPE term *denotes* the $c_t$ and $g_t$ of Definition 14 | Proof, in the implementation language | To build — this is the core |
-| **T3** | Definition 14's LPE is bisimilar to the reachability graph | Theorem 1, `CPN.bisimulation_transRel` | Proved |
-| **T4** | The text `mcrl22lps` reads back denotes the term that was emitted | Not provable without a formalized mCRL2 grammar | Test only |
-| **T5** | The list encoding refines the bag encoding | Unproved anywhere; required by the fast output | Open |
+| **T0** | The emitted text is accepted by `mcrl22lps` | Running the tool | Tested on every fixture, both encodings, both translators |
+| **T1** | The parsed structure is a CPN satisfying Definition 5 | Runtime validation, once at the boundary | Done twice (M3, M4) |
+| **T2** | The emitted LPE term *denotes* the $c_t$ and $g_t$ of Definition 14 | Proof, in the implementation language | Done twice (M3, M4), and once in [`Proof/`](../../Proof) for an arbitrary expression language (M2) |
+| **T3** | Definition 14's LPE is bisimilar to the reachability graph | Theorem 1, `CPN.bisimulation_transRel` | Proved. Composed with T2 in Lean only |
+| **T4** | The text `mcrl22lps` reads back denotes the term that was emitted | Not provable without a formalized mCRL2 grammar | Tested only, by design |
+| **T5** | The list encoding refines the bag encoding | Was unproved anywhere; required by the fast output | Proved twice (M6, M4) |
 
 **T2 composed with T3 is the theorem the project is for**: *the specification this program
-prints denotes an LTS bisimilar to the CPN's reachability graph.* T3 is done. T2 is the work.
+prints denotes an LTS bisimilar to the CPN's reachability graph.* T3 was done before this
+plan; T2 was the work, and the composition is
+`Net.bisimilar_reachabilityGraph_emitted` in [`Implementation/Lean/Bridge/`](../Lean/Bridge).
+It exists in Lean and nowhere else, because Theorem 1 is a Lean term.
 
 T0 and T4 are the honest ceiling.
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.1 already ranks three
@@ -79,7 +82,7 @@ and a parser correctness proof, which is a separate research project and is out 
 mitigated by running `mcrl22lps` in CI on every fixture, which is cheap and catches everything a
 printer realistically gets wrong.
 
-T5 is the interesting one, and [§5](#5-the-bag-versus-list-problem) treats it separately.
+T5 was the interesting one, and [§5](#5-the-bag-versus-list-problem) treats it separately.
 
 ---
 
@@ -155,6 +158,18 @@ items for a program rather than for the Lean development.
 Obligation 4 is the risk. Obligations 1 to 3 are mechanical, and obligation 5 follows from them
 together with 4.
 
+**How that turned out.** Obligation 4 was not the risk, and obligation 1 was not needed at
+all. Three independent developments — [`Implementation/Lean/`](../Lean),
+[`Implementation/Dafny/`](../Dafny) and, for an arbitrary expression language,
+[`Proof/`](../../Proof) — reached the same two conclusions. The tuple sorts of item 1 are only
+ever *bound*, never the sort of a subterm, so a product former is not needed anywhere and the
+ripple item 1 predicts into `varType` and the examples never happens. And item 4 is not a
+proof: in all three, an expression is evaluated under a binding restricted to its own free
+variables, so moving $E(p,t)$ into the summand's context is not a re-indexing of the term and
+the obligation collapses. What made that so is a modelling decision rather than a language
+feature — scoping is extrinsic in all three — which is where [§7](#7-risks)'s severity rating
+was aimed wrongly. Items 2, 3 and 5 behaved as predicted.
+
 ### 4.1 One consequence to accept early
 
 Bag inclusion on a bag modelled as a total function into $\mathbb{N}$ is a universally
@@ -166,9 +181,12 @@ that it reframes §4.10: `LPE.cond` landing in `Prop` was never a modelling conv
 consequence of how Definition 1 models a bag.
 
 So the implementation's bags are finitely supported from the start. This is a further departure
-from Definition 1 as printed, and should be recorded in
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §4 alongside §4.1 to §4.3 when
-it is made.
+from Definition 1 as printed, and it is recorded:
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §4.10 carries it, next to the
+`Prop`-versus-$\textit{Bool}$ choice it is the explanation of, and
+[`Implementation/Lean/README.md`](../Lean/README.md) §3.1 states it at the point where it is
+made. [`Proof/`](../../Proof) does *not* make it — its `Bag` is still Definition 1's total
+function — which is why the condition there stays a proposition even now that it is syntax.
 
 ---
 
@@ -209,6 +227,17 @@ T2 can be proved about today, and its output is a correct baseline. Add the list
 that lemma exists, the fast output is exactly as justified as the reference implementation's,
 which is to say not at all.
 
+**How it turned out.** M6 is done, and so is the same refinement in Dafny. Of the two
+refinements above, *typing* was discharged by construction rather than proved: both
+translators emit `List(C(p))`, one list sort per place at that place's own color, instead of
+the reference generator's shared tagged union, so there is no invariant left to preserve.
+*Order* is the lemma, and it is proved — `Net.listRel` relates a list marking to a bag marking
+when they give every token the same count, and nothing anywhere asks two list states to be
+equal, which is exactly why production order does not matter. The prediction in the paragraph
+above is visible in the fixtures: on `multitoken.cpn.json` the bag encoding gives four states
+and the list encoding five, and `ltscompare -ebisim` reports them equal anyway. See
+[`Implementation/Lean/README.md`](../Lean/README.md) §4.5.
+
 Encouragingly, the two encodings can be compared mechanically: `ltscompare -ebisim` already
 reports them strongly bisimilar on Example 9. See [`Target.md`](Target.md) §4. That is a test
 and not a proof, but it makes the lemma cheap to *disprove* if it is false, which is the useful
@@ -218,38 +247,61 @@ direction to check first.
 
 ## 6. Milestones
 
-| # | Milestone | Depends on | Tier reached |
-| --- | --- | --- | --- |
-| **M0** | Golden fixtures. Example 9 emitted by hand in both encodings, `mcrl22lps` green, LTS matching Example 5's corrected chain. | — | T0 |
-| **M1** | Unverified prototype. Native CPN JSON in, bag-encoded mCRL2 out. Harness green on Examples 3, 5 and 9. | M0, [`InputFormat.md`](InputFormat.md) | T0, T1 |
-| **M2** | The formalization made syntactic. `ExprTy` gains products, the expression language gains the Definition 14 operations with their evaluation equations, `toLPE_cond` becomes a theorem. | [§4](#4-the-proof-obligations-concretely) | T2, in Lean |
-| **M3** | Verified translator **#1, Lean 4**. Compiled to a binary, differential-tested against M1. | M2 | T2 with T3 |
-| **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 |
-| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 |
-| **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 |
-| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M1 | broader T1 |
+| # | Milestone | Depends on | Tier reached | Status |
+| --- | --- | --- | --- | --- |
+| **M0** | Golden fixtures. Example 9 emitted by hand in both encodings, `mcrl22lps` green, LTS matching Example 5's corrected chain. | — | T0 | Done |
+| **M1** | Unverified prototype. Native CPN JSON in, bag-encoded mCRL2 out. Harness green on Examples 3, 5 and 9. | M0, [`InputFormat.md`](InputFormat.md) | T0, T1 | Skipped |
+| **M2** | The formalization made syntactic. `ExprTy` gains products, the expression language gains the Definition 14 operations with their evaluation equations, `toLPE_cond` becomes a theorem. | [§4](#4-the-proof-obligations-concretely) | T2, in Lean | Done, differently, and last |
+| **M3** | Verified translator **#1, Lean 4**. Compiled to a binary, differential-tested against M1. | M2 | T2 with T3 | Done |
+| **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
+| **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T2 with T3 | Not started |
+| **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
+| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M1 | broader T1 | Not started |
 
 M0 through M3 are the spine. M4 and M5 are what the multiple languages are for: the same
 obligations discharged by SMT automation and by a mainstream functional toolchain, which is the
 comparison that makes building it three times worthwhile rather than merely repetitive.
 
-M2 is the long pole. It is also the milestone that is valuable on its own even if no translator
-is ever finished, because it is item 2 of
+### 6.1 Where the order above did not survive
+
+Three things about that table are worth recording rather than quietly editing.
+
+**M1 was skipped, and is now obsolete.** Its purpose was to be a differential oracle for M3
+and M4, and the Lean translator arrived before anything needed one. M4 then supplied a better
+oracle than M1 could have been: two *verified* translators, sharing no code, written against
+these documents rather than against each other, and emitting byte-identical text on every
+fixture. The one thing its absence still costs is M5, which
+[`Languages.md`](Languages.md) §3 planned as "add contracts to the prototype" and which now
+starts from nothing.
+
+**M2 was not the long pole, and it came last.** It was scheduled first, and scheduled first
+because obligation 4 was to be prototyped there before committing to three implementations —
+the top row of [§7](#7-risks). Both translators were finished before it, so it prototyped
+nothing; and when it was finally done, the obligation it was meant to de-risk cost nothing
+there either. What it does still carry is the value it has on its own: it is item 2 of
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §7's list of gaps worth acting
-on.
+on, and it closes that gap for an *arbitrary* expression language rather than for the one
+concrete language a translator fixes.
+
+**M2 was done differently than written.** `ExprTy` did not gain products, and `ExprLang` did
+not gain the Definition 14 operations as fields; the operations became a small inductive syntax
+layered over the assumed language instead. Neither of the two written changes turned out to be
+necessary, and the second turned out to be undesirable.
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2 is the record of why, and
+[§4](#4-the-proof-obligations-concretely) above summarises the finding.
 
 ---
 
 ## 7. Risks
 
-| Risk | Severity | Mitigation |
-| --- | --- | --- |
-| Obligation 4, the substitution lemma, is harder than it looks | High | Prototype it in Lean at M2, before committing to three implementations |
-| M2's `ExprTy` surgery ripples through `Examples/` | Low | §5.1 notes `CounterNet.Expr` is already a free-variable set paired with an evaluation function, so supplying the new fields is mechanical |
-| Cameleer is research-grade and may not carry M5 | Medium | Fall back to plain Why3, or to OCaml with the proof in Lean and the OCaml differential-tested |
-| The list refinement of [§5](#5-the-bag-versus-list-problem) is false as stated | Medium | Cheap to falsify with `ltscompare` on a net holding several tokens in one place. Do it at M1, not M6 |
-| T4 stays untestable in some corner | Low | `mcrl22lps` in CI on every fixture |
-| Scope creep into BPMN | High | Chapter 4 is out of scope for the notes and stays out of scope here. The input is a CPN |
+| Risk | Severity | Mitigation | Outcome |
+| --- | --- | --- | --- |
+| Obligation 4, the substitution lemma, is harder than it looks | High | Prototype it in Lean at M2, before committing to three implementations | **Rated wrongly.** It cost nothing in any of the three, and the mitigation never ran, because M2 came last. See [§4](#4-the-proof-obligations-concretely) |
+| M2's `ExprTy` surgery ripples through `Examples/` | Low | §5.1 notes `CounterNet.Expr` is already a free-variable set paired with an evaluation function, so supplying the new fields is mechanical | **Rated correctly, for the wrong reason.** There was no `ExprTy` surgery at all; the ripple was six lemmas in `Examples/CounterNetLPE.lean`, one `rw` each |
+| Cameleer is research-grade and may not carry M5 | Medium | Fall back to plain Why3, or to OCaml with the proof in Lean and the OCaml differential-tested | **Still open.** M5 is not started |
+| The list refinement of [§5](#5-the-bag-versus-list-problem) is false as stated | Medium | Cheap to falsify with `ltscompare` on a net holding several tokens in one place. Do it at M1, not M6 | **Did not materialise.** The refinement holds and is proved twice; `multitoken.cpn.json` is the falsification test and it is in the harness |
+| T4 stays untestable in some corner | Low | `mcrl22lps` in CI on every fixture | **Held.** `scripts/check.sh` runs the toolset on every fixture, in both encodings |
+| Scope creep into BPMN | High | Chapter 4 is out of scope for the notes and stays out of scope here. The input is a CPN | **Held.** The input is still a CPN |
 
 ---
 

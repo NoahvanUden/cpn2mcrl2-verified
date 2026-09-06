@@ -42,7 +42,7 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Milestones M0, M3, M4 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
+Milestones M0, M2, M3, M4 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
 that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
 builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
 [`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
@@ -97,8 +97,33 @@ each other. Dafny cannot compose with Theorem 1, and [`Languages.md`](Languages.
 in advance; what M4 buys is an independent proof of the same T2 statement and a differential
 test with real teeth, not a doubled guarantee.
 
-Not done: the PNML importers of M7. See
-[`Implementation/Lean/README.md`](../Lean/README.md) §5.
+**M2, the formalization made syntactic.** This one was scheduled first and finished last, and
+it is the only milestone that changes [`Proof/`](../../Proof) rather than adding to
+[`Implementation/`](..). `CPN.toLPE` used to give $c_t$ and $g_t$ as Lean functions, so
+`CPN.toLPE_cond` and `CPN.toLPE_next` held by `rfl` and nothing showed that Definition 14's
+output is *expressible* at all. It now assembles them as terms — `CPN.Term` and `CPN.Cond`,
+the state components together with $\land$, $\subseteq$, $\cup$ and $\setminus$ over the CPN's
+own guard and arc expressions — and `CPN.LPESyntax.denote` evaluates the result into the `LPE`
+of Definition 13. Both theorems are proved from the evaluation equations, and `rfl` proves
+neither. That is item 2 of
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §7, closed for *every*
+expression language `ExprLang` admits rather than for the one concrete language a translator
+fixes.
+
+It was done differently than [`Plan.md`](Plan.md) §6 wrote it, and the difference is the
+result. `ExprTy` gained no product former, because Definition 13's tuples are only ever bound;
+`ExprLang` gained no fields, because assuming the tool's language already has bag operations
+fills a gap Chapter 2 leaves open, and giving the state components to it would have forced a
+new component into Definition 5's tuple. And obligation 4, the substitution lemma
+[`Plan.md`](Plan.md) §7 rates the project's high risk, is absent here too — for the third
+time, and for the same reason both translators found: scoping is extrinsic, so moving an arc
+expression into the summand's context is a different restriction of the same binding rather
+than a re-indexing of the term. See
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2.
+
+Not done: M5, the third translator in OCaml with GOSPEL/Cameleer, and the PNML importers of
+M7. See [`Implementation/Lean/README.md`](../Lean/README.md) §5 and
+[`Plan.md`](Plan.md) §6.1.
 
 Before any of that, M0's hand-written check that the target syntax is real: Example 9 of
 [`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both encodings, both
