@@ -30,9 +30,9 @@ example (a tennis game) that is not from the thesis.
   (the `Proof` library and the `Examples` library).
 - No `sorry`, no `axiom` declaration and no `native_decide` anywhere in `Proof/` or
   `Examples/`.
-- `#print axioms` on `CPN.bisimulation_transRel`, `CPN.bisimilar_toLPESemantics` and
-  `CPN.mem_RGState_of_directlyReachable` reports only `propext`, `Classical.choice` and
-  `Quot.sound` — the three standard Lean axioms.
+- `#print axioms` on `CPN.bisimulation_transRel`, `CPN.bisimilar_toLPESemantics`,
+  `CPN.mem_RGState_of_directlyReachable`, `CPN.toLPE_cond` and `CPN.toLPE_next` reports only
+  `propext`, `Classical.choice` and `Quot.sound` — the three standard Lean axioms.
 
 ---
 
@@ -133,13 +133,21 @@ expression. This makes "evaluation depends only on the free variables" true by c
 which the notes leave implicit. It also means `vars` must be the exact free-variable set, not
 an over-approximation.
 
-### 4.5 Every side condition of Definition 5 is inert
+### 4.5 Every side condition of Definition 5 but one is inert
 
-`finitePlaces`, `finiteTransitions`, `finiteColors`, `finiteV`, `boolMem`, `colorMem` and
-`varTypeMem` are declared as fields and discharged in `Examples/CounterNet.lean`, but no proof
-in `Proof/` uses any of them. That is expected — Definitions 6 to 9 and Theorem 1 genuinely do
-not need finiteness — but it means none of them is load-bearing, so an error in one would not
-be caught by the build.
+`finiteTransitions`, `finiteColors`, `finiteV`, `boolMem`, `colorMem` and `varTypeMem` are
+declared as fields and discharged in `Examples/CounterNet.lean`, but no proof in `Proof/`
+uses any of them. That is expected — Definitions 6 to 9 and Theorem 1 genuinely do not need
+finiteness — but it means none of them is load-bearing, so an error in one would not be
+caught by the build.
+
+`finitePlaces` was in that list and no longer is. `CPN.preList` enumerates $pre(t)$ from it,
+because Definition 14's bounded conjunction over $pre(t)$ is unfolded into a finite one when
+the translation is built; see [§5](#5-what-the-translation-is-and-what-theorem-1-therefore-establishes).
+That is the one prediction of [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed)
+about inert fields becoming load-bearing that has come true. The other four it names —
+`finiteV`, `finiteColors`, `colorMem` and `varTypeMem` — were predicted to be needed for
+enumerating $H_t$ and for emitting sort declarations, and neither of those is done here.
 
 `Bag.coeff`, `Bag.card` and `Bag.iUnion` are likewise defined and never used.
 
@@ -189,6 +197,13 @@ bag inclusion over an arbitrary color, which is not decidable. A boolean-valued 
 the special case where the proposition is that the boolean is `true`. This is a consequence of
 [§5](#5-what-the-translation-is-and-what-theorem-1-therefore-establishes).
 
+It survives the change recorded there. `CPN.Cond` is syntax now, but `CPN.Cond.eval` still
+lands in `Prop`, for the same reason: its `subset` clause is bag inclusion over an arbitrary
+color. Getting a $\textit{Bool}$ needs bags to be finitely supported, which is a further
+departure from Definition 1 as printed and is not made here.
+
+> **Departure from Definition 1, made elsewhere.** Both translators under [`Implementation/`](../../Implementation) do make it — their `Bag` is a list of coefficient entries rather than a total function $S \to \mathbb{N}$, which is exactly what lets their $c_t$ be a $\textit{Bool}$-valued term; [`Plan.md`](../../Implementation/docs/Plan.md) §4.1 asks for that departure to be recorded, and this is the record.
+
 ---
 
 ## 5. What the translation is, and what Theorem 1 therefore establishes
@@ -210,11 +225,18 @@ semantics it is compared against in Theorem 1, and the theorem could not fail. T
 identification is therefore a claim, `CPN.toLPE_cond` and `CPN.toLPE_next`, rather than a
 definition.
 
-Both hold by `rfl`, because the two sides are transcriptions of one formula. That is still
-worth having: `rfl` stops typechecking the moment either side drifts. Injecting into
-`CPN.Enabled` the slip the thesis itself makes — quantifying over $post(t)$ instead of
-$pre(t)$ — now breaks `toLPE_cond`, `toLPE_next` and `toLPESemantics_step`, where before the
-change it broke nothing and left the build green.
+Neither holds by `rfl` any more, and that is the change [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed)
+asked for. `CPN.toLPE` no longer gives $c_t$ and $g_t$ as Lean functions; it *assembles*
+them, as `CPN.condTerm` and `CPN.nextTerm`, out of the CPN's own guard and arc expressions
+and four operations applied to those, and an `LPE` is what evaluating that syntax denotes. So
+`toLPE_cond` says the condition the translation built evaluates to `CPN.Enabled`, and
+`toLPE_next` says the same of `CPN.fire` — both proved from the evaluation equations of
+`CPN.Term` and `CPN.Cond`. That `rfl` proves neither was checked by trying it.
+
+The property the `rfl`s had survives the change. Injecting into `CPN.Enabled` the slip the
+thesis itself makes — quantifying over $post(t)$ instead of $pre(t)$ — breaks `toLPE_cond`,
+`toLPE_next` and `toLPESemantics_step`, where before `CPN.toLPE` was separated from the
+semantics it broke nothing and left the build green.
 
 What is still shared between the two sides is how the CPN's components are *read* — `pre`,
 `G`, and `consume`/`produce` for the §2.1.1 convention on arc expressions of non-existing
@@ -228,29 +250,39 @@ state of the first summand. In particular `cond_t₃` confirms the deviation rec
 [mCRL2.md](mCRL2.md) Example 9: the translation yields the inclusion in $s_{p_2}$, not in
 $s_{p_3}$.
 
-**Two limits remain, and they should be stated plainly.**
+**Two limits were stated here. One is closed; one remains.**
 
-1. **Theorem 1's proof stays short.** The two transcriptions are definitionally equal, so once
-   `toLPE_cond` and `toLPE_next` are in place the two transition relations still agree by
-   unfolding. Separating the definitions makes a divergence *detectable*; it does not make the
-   bisimulation argument deeper. What the Lean proof of Theorem 1 contributes beyond the
-   thesis is still the step the thesis skips: an LPE step out of a state of the reachability
-   graph lands back inside it, which is `CPN.mem_RGState_of_directlyReachable`.
-2. **`LPE` models the transition-system schema an LPE denotes, not LPE syntax.** With the
-   condition a proposition and the next state a Lean function, an `LPE` is not a piece of
-   mCRL2 text. So the formalization does not establish that $c_t$ and $g_t$ are *expressible*
-   in the mCRL2 data language — that the translation produces a well-formed mCRL2
-   specification at all. Closing this is a larger change: `LPE` becomes syntactic, `ExprLang`
-   gains the closure assumptions Definition 14 needs (bounded $\forall$ over $pre(t)$,
-   $\subseteq$, $\setminus$, $\cup$, tupling) with their evaluation equations, and
-   `toLPE_cond` becomes a genuine theorem — "the expression built evaluates to `Enabled`" —
-   proved from those equations rather than by `rfl`. That is where Theorem 1 would acquire
-   content beyond bookkeeping. What that change involves is set out in
-   [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed).
+1. **Theorem 1's proof stays short**, and this is the one that remains. `toLPE_cond` and
+   `toLPE_next` are no longer definitional, so the two transition relations no longer agree
+   by unfolding: `CPN.toLPESemantics_step` rewrites with both, and it is the only place that
+   uses either. But the bisimulation argument is not deeper for it — the two theorems are
+   consumed in one step each and everything after that is unchanged. What the Lean proof of
+   Theorem 1 contributes beyond the thesis is still the step the thesis skips: an LPE step
+   out of a state of the reachability graph lands back inside it, which is
+   `CPN.mem_RGState_of_directlyReachable`.
+2. **`LPE` modelled the transition-system schema an LPE denotes, not LPE syntax.** That was
+   the second limit and it is closed. `CPN.LPESyntax` is an LPE as data — a condition per
+   transition, a next-state term per transition and place, and the initial expression of each
+   place — and `CPN.LPESyntax.denote` is the `LPE` it denotes. `LPE` is now the *meaning* of
+   what the translation produces rather than the thing it produces, and $c_t$ and $g_t$ are
+   expressible by construction in a language whose only primitives beyond the CPN's own
+   expressions are $\land$, $\subseteq$, $\cup$ and $\setminus$. What that took is
+   [§5.2](#52-what-closing-it-actually-took), and it is not what
+   [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed) predicted.
 
 Separately, and whatever is done about the two above: nothing here connects the Lean to the
 translation as it is actually implemented. That would need extraction, a shared serialization
 format, or at minimum a documented correspondence, and is out of scope for these files.
+
+That paragraph is left standing because [`Implementation/`](../../Implementation) is the
+answer to it, and it is worth being exact about how much of an answer.
+[`Implementation/Lean/`](../../Implementation/Lean) is a translator that emits mCRL2 text and
+whose correctness theorem composes with `CPN.bisimulation_transRel` inside Lean;
+[`Implementation/Dafny/`](../../Implementation/Dafny) is a second one, agreeing with it byte
+for byte on every fixture. Neither is *this* development extracted. They fix one concrete
+expression language where `Proof/` quantifies over every language `ExprLang` admits, and they
+share no code with it — so what they add is a translation that runs, not a stronger theorem
+about the one here.
 
 None of this makes anything on the other pages wrong. It bounds what the Lean establishes:
 **given** that an LPE means the transition system Definition 15 assigns it, the reachability
@@ -323,7 +355,7 @@ printed, to be recorded here alongside [§4.1](#41-bag-size-is-valued-in-the-ext
 to [§4.3](#43-definition-1s-non-emptiness-is-dropped).
 
 **What would become load-bearing.** Several of the fields
-[§4.5](#45-every-side-condition-of-definition-5-is-inert) records as inert would start
+[§4.5](#45-every-side-condition-of-definition-5-but-one-is-inert) records as inert would start
 carrying weight: `finitePlaces` to enumerate the components of $D$ and to unfold the
 conjunction over $pre(t)$, `finiteV` to enumerate $H_t$, and `finiteColors`, `colorMem` and
 `varTypeMem` to emit the sort declarations. `inArc` and `outArc` would also have to be
@@ -352,6 +384,64 @@ decidable, or `Finset`s, so that $pre(t)$ computes.
 Independently of that choice, emitting the LPE of `Examples/CounterNetLPE.lean` as mCRL2 text
 and checking that `mcrl22lps` accepts it is cheap. It proves nothing, but it is the only
 check named here that tests the translation against the actual tool.
+
+### 5.2 What closing it actually took
+
+Everything above in [§5.1](#51-what-it-would-take-to-show-the-emitted-specification-is-well-formed)
+is left as it was written, because the interest is in where it was wrong. It offered three
+ways forward and the route taken is none of them.
+
+**What was built.** `CPN.Term` and `CPN.Cond` are an inductive syntax for exactly the layer
+Definition 14 *adds* to the CPN: the state components $s_p$, conjunction, bag $\subseteq$,
+$\cup$ and $\setminus$. The guard and the arc expressions enter through one constructor each
+and are never looked inside. `CPN.LPESyntax` bundles them into an LPE and
+`CPN.LPESyntax.denote` evaluates it. That is option C stripped of the sort declarations and
+the printer — which is to say, of the parts of C that only a translator needs, and
+[`Implementation/`](../../Implementation) is where the translator lives.
+
+**Why not option B.** Adding the operations to `ExprLang` as fields reads better and §5.1
+recommends it, but it does not survive contact with the state components. For $s_p$ to be a
+term of the language it has to *be* a variable of it, so `varType` becomes
+`Var → ExprTy Color` and — the real cost — the CPN has to supply a fresh variable per place
+together with its freshness conditions, which is a new component in Definition 5's tuple that
+the thesis does not have. It also assumes the tool's expression language contains bag
+operations, which Chapter 2 nowhere says. Building the four operations assumes nothing about
+the tool and leaves Definition 5 alone.
+
+**The structural blocker was not one.** §5.1 names the missing product former as the blocker.
+Definition 13's $D$ and $H_t$ are indeed tuples, but they are only ever *bound*: $d$ is the
+parameter list of the process and $h_t$ the variable list of the sum. So the tupling of $g_t$
+is the indexing of `LPESyntax.next` by a place, the projection $s_p$ is a constructor, and
+`ExprTy` keeps the two constructors it had. Items 1 and 2 of §5.1's list do not happen, and
+neither does the ripple into `Bindings`, `CPN.varTypeMem` and every example that item 2
+predicts. [`Implementation/Lean/README.md`](../../Implementation/Lean/README.md) §4.1 reaches
+the same conclusion from the mCRL2 side, independently.
+
+**Item 4, "the one genuinely new proof obligation", is not a proof.** There is no substitution
+lemma here. `ExprLang.evalOn` evaluates an expression under any binding that contains its free
+variables, by restricting that binding to them; so moving $E(p,t)$ from $V$ into
+$\mathrm{Var}(t)$ is not a re-indexing of the term but a different restriction of the same
+binding, and the obligation is discharged by how scoping is modelled rather than by an
+induction. Both translators of [`Implementation/`](../../Implementation) report the same
+thing, and [`Implementation/Dafny/README.md`](../../Implementation/Dafny/README.md) §5 draws
+the conclusion the three developments now agree on: the cost of this obligation was never
+dependent types against SMT, it was intrinsic scoping against extrinsic scoping.
+
+**What did cost something.** Item 3, the operations with their evaluation equations; and the
+unfolding of the bounded quantifier, which is `CPN.condOf` folding a conjunction over
+`CPN.preList` and `CPN.eval_condOf_preList` folding it back into $\forall p \in pre(t)$. That
+second one is where `finitePlaces` stops being inert, as §5.1 predicts and
+[§4.5](#45-every-side-condition-of-definition-5-but-one-is-inert) now records. Item 5 follows
+from the equations, as predicted.
+
+**What is still not established.** The third reading of "well-formed" is untouched: nothing
+here is text, so nothing here is accepted or rejected by `mcrl22lps`. `Cond.eval` still lands
+in `Prop` rather than $\textit{Bool}$, for the reason in
+[§4.10](#410-the-condition-of-a-summand-is-a-proposition-not-a-boolean). And the claim reached
+is the first reading, not the second: $c_t$ and $g_t$ are terms of *a* language extending the
+assumed one with four operations, and that those four are native mCRL2 bag operators is the
+question §5.1 flags and [`Target.md`](../../Implementation/docs/Target.md) answers by running
+the toolset rather than by proof.
 
 ---
 
@@ -411,28 +501,24 @@ summand (`cond_t₃`), and Example 5's seven-state chain (`not_enabled_t₂_M₅
 is implemented as `CPN.consume` and `CPN.produce`, with `fire_of_not_mem` confirming what it is
 for. The proofs are complete and rest on nothing but the standard axioms.
 
-Four gaps this review found have since been closed: the root module's stale
+Five gaps this review found have since been closed: the root module's stale
 `import Proof.Basic`, which broke a bare `lake build`; the missing field of Definition 5
 requiring the type of a variable to be a color of the net, now `CPN.varTypeMem`; Example 5,
-now formalized in `Examples/CounterNetGraph.lean` ([§6.1](#61-example-5)); and the circularity
+now formalized in `Examples/CounterNetGraph.lean` ([§6.1](#61-example-5)); the circularity
 in `CPN.toLPE`, which was defined as the very semantics Theorem 1 compares it against and now
 builds $c_t$ and $g_t$ from Definition 14's own text
-([§5](#5-what-the-translation-is-and-what-theorem-1-therefore-establishes)).
+([§5](#5-what-the-translation-is-and-what-theorem-1-therefore-establishes)); and the second
+limit that section recorded, `LPE` modelling a transition system rather than syntax. The last
+is the newest: `CPN.LPESyntax` is an LPE as data and `CPN.LPESyntax.denote` is the `LPE` it
+denotes, so `toLPE_cond` and `toLPE_next` are now proved from evaluation equations where they
+used to hold by `rfl` ([§5.2](#52-what-closing-it-actually-took)).
 
-The gaps still worth acting on, in order:
+One gap is still worth acting on:
 
 1. Record in the notes the three readings the Lean had to make and the notes do not mention:
    the ill-definedness of bag size for an infinite $S$ ([§4.1](#41-bag-size-is-valued-in-the-extended-naturals)),
    the finiteness hypothesis operation 5 needs ([§4.2](#42-operation-5-gains-a-finiteness-hypothesis)),
    and the reading of Definition 15 ([§4.9](#49-definition-15-is-read-not-transcribed)).
-2. Decide whether a *semantic* `LPE` is the intended scope
-   ([§5](#5-what-the-translation-is-and-what-theorem-1-therefore-establishes)). `CPN.toLPE`
-   now builds $c_t$ and $g_t$ itself, so the translation is no longer defined as the semantics
-   it is compared against — but `LPE` still models the transition system an LPE denotes rather
-   than mCRL2 text, so nothing yet shows the translation emits a well-formed specification. If
-   the claim is meant to be about the translation *as a syntactic construction*, making `LPE`
-   syntactic and proving `toLPE_cond` from evaluation equations rather than by `rfl` is what
-   would establish it.
 
 ---
 
