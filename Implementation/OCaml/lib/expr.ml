@@ -42,6 +42,24 @@ type ctx = (string * expr_ty) list
     than with an existential over [color], because the importer has to be able to check it. *)
 let is_color_sort = function CT _ -> true | _ -> false
 
+(** Decidable equality on sorts, and on an optional sort.
+
+    [sort_of] answers an [expr_ty option] and almost every use of it is a comparison, so these
+    two are the most-used functions in the file. In Lean the comparison is [DecidableEq],
+    derived; in Dafny it is [==]. *)
+let expr_ty_eq (t1 : expr_ty) (t2 : expr_ty) : bool =
+  match (t1, t2) with
+  | CT a, CT b -> color_eq a b
+  | BT a, BT b -> color_eq a b
+  | LT a, LT b -> color_eq a b
+  | _ -> false
+
+let expr_ty_opt_eq (o1 : expr_ty option) (o2 : expr_ty option) : bool =
+  match (o1, o2) with
+  | None, None -> true
+  | Some a, Some b -> expr_ty_eq a b
+  | _ -> false
+
 (** [EXPR], with four departures from the grammar of [InputFormat.md] §4.1.
 
     [EVar] may have bag sort. A CPN file never produces one; Definition 14's place parameters
@@ -92,14 +110,18 @@ type expr =
    can be read side by side. *)
 
 let int_pair sa sb result =
-  if sa = Some (CT CInt) && sb = Some (CT CInt) then Some result else None
+  if expr_ty_opt_eq sa (Some (CT CInt)) && expr_ty_opt_eq sb (Some (CT CInt))
+  then Some result
+  else None
 
 let bool_pair sa sb =
-  if sa = Some (CT CBool) && sb = Some (CT CBool) then Some (CT CBool) else None
+  if expr_ty_opt_eq sa (Some (CT CBool)) && expr_ty_opt_eq sb (Some (CT CBool))
+  then Some (CT CBool)
+  else None
 
 let same_color_pair sa sb =
   match (sa, sb) with
-  | Some (CT c1), Some (CT c2) -> if c1 = c2 then Some (CT CBool) else None
+  | Some (CT c1), Some (CT c2) -> if color_eq c1 c2 then Some (CT CBool) else None
   | _ -> None
 
 (** The sort of a binary bag operation: [same] says whether the result is the bag sort itself
@@ -107,18 +129,18 @@ let same_color_pair sa sb =
 let bag_pair sa sb same =
   match (sa, sb) with
   | Some (BT c1), Some (BT c2) ->
-      if c1 = c2 then Some (if same then BT c1 else CT CBool) else None
+      if color_eq c1 c2 then Some (if same then BT c1 else CT CBool) else None
   | _ -> None
 
 let list_pair sa sb same =
   match (sa, sb) with
   | Some (LT c1), Some (LT c2) ->
-      if c1 = c2 then Some (if same then LT c1 else CT CBool) else None
+      if color_eq c1 c2 then Some (if same then LT c1 else CT CBool) else None
   | _ -> None
 
 let snoc_pair sl se =
   match (sl, se) with
-  | Some (LT c1), Some (CT c2) -> if c1 = c2 then Some (LT c1) else None
+  | Some (LT c1), Some (CT c2) -> if color_eq c1 c2 then Some (LT c1) else None
   | _ -> None
 
 (** The sort of an expression, if it has one. *)
@@ -129,11 +151,11 @@ let rec sort_of e =
   | EBool _ -> Some (CT CBool)
   | ECtor (c, id) -> (
       match c with
-      | CEnum (_, ids) when List.mem id ids -> Some (CT c)
+      | CEnum (_, ids) -> if mem_string id ids then Some (CT c) else None
       | _ -> None)
   | EMkRec (c, args) -> (
       match c with
-      | CRecord (_, fs) when args_match args fs -> Some (CT c)
+      | CRecord (_, fs) -> if args_match args fs then Some (CT c) else None
       | _ -> None)
   | EProj (e0, f) -> (
       match sort_of e0 with
@@ -148,7 +170,9 @@ let rec sort_of e =
   | EEq (a, b) -> same_color_pair (sort_of a) (sort_of b)
   | EAnd (a, b) -> bool_pair (sort_of a) (sort_of b)
   | EOr (a, b) -> bool_pair (sort_of a) (sort_of b)
-  | ENot a -> if sort_of a = Some (CT CBool) then Some (CT CBool) else None
+  | ENot a ->
+      if expr_ty_opt_eq (sort_of a) (Some (CT CBool)) then Some (CT CBool)
+      else None
   | EEmptyBag c -> Some (BT c)
   | ESingle (_, e0) -> (
       match sort_of e0 with Some (CT c) -> Some (BT c) | _ -> None)
@@ -167,17 +191,33 @@ and args_match args fs =
   match (args, fs) with
   | [], [] -> true
   | (n, e) :: arest, (n', c) :: frest ->
-      n = n' && sort_of e = Some (CT c) && args_match arest frest
+      Util.string_eq n n'
+      && expr_ty_opt_eq (sort_of e) (Some (CT c))
+      && args_match arest frest
   | _ -> false
 
 (** [e] has the sort [t]. *)
-let well_typed e t = sort_of e = Some t
+let well_typed e t = expr_ty_opt_eq (sort_of e) (Some t)
 
 (** What an expression evaluates to. *)
 type denot = DVal of value | DBag of Bag.t | DList of value list
 
 (** Every element of the list has the color [c]. *)
-let seq_of_color l c = List.for_all (fun v -> value_of_color v c) l
+let seq_of_color l c = Util.all (fun v -> value_of_color v c) l
+
+(** Structural equality on denotations, which an equality test evaluates with. *)
+let rec value_list_eq (a : value list) (b : value list) : bool =
+  match (a, b) with
+  | [], [] -> true
+  | x :: r, y :: s -> value_eq x y && value_list_eq r s
+  | _ -> false
+
+let denot_eq (d1 : denot) (d2 : denot) : bool =
+  match (d1, d2) with
+  | DVal a, DVal b -> value_eq a b
+  | DBag a, DBag b -> Bag.bag_eq a b
+  | DList a, DList b -> value_list_eq a b
+  | _ -> false
 
 (** A denotation of the right shape for the sort [t]. *)
 let denot_has_sort d t =
@@ -210,7 +250,7 @@ let junk_env : env =
     is also the only form that is usable, because [env] is total and an enumeration with no
     constructors has no value at all for a junk environment to hold. *)
 let env_wf_on (g : ctx) (env : env) =
-  List.for_all (fun (x, t) -> denot_has_sort (env t x) t) g
+  Util.all (fun q -> denot_has_sort (env (snd q) (fst q)) (snd q)) g
 
 (* Reading a denotation at a shape. [denot] is untyped, so evaluating [1 + e] has to do
    something when [e] is not an integer. These give the value a well-typed environment
@@ -242,7 +282,7 @@ let rec eval e (env : env) =
   | EAdd (a, b) -> DVal (VInt (as_int (eval a env) + as_int (eval b env)))
   | ESub (a, b) -> DVal (VInt (as_int (eval a env) - as_int (eval b env)))
   | EMul (a, b) -> DVal (VInt (as_int (eval a env) * as_int (eval b env)))
-  | EEq (a, b) -> DVal (VBool (eval a env = eval b env))
+  | EEq (a, b) -> DVal (VBool (denot_eq (eval a env) (eval b env)))
   | ELe (a, b) -> DVal (VBool (as_int (eval a env) <= as_int (eval b env)))
   | ELt (a, b) -> DVal (VBool (as_int (eval a env) < as_int (eval b env)))
   | EAnd (a, b) -> DVal (VBool (as_bool (eval a env) && as_bool (eval b env)))
@@ -275,7 +315,7 @@ let rec free_vars e : ctx =
   match e with
   | EVar (x, t) -> [ (x, t) ]
   | EInt _ | EBool _ | ECtor _ | EEmptyBag _ | ENilList _ -> []
-  | EMkRec (_, args) -> List.concat_map (fun (_, e0) -> free_vars e0) args
+  | EMkRec (_, args) -> Util.flat_map (fun q -> free_vars (snd q)) args
   | EProj (e0, _) -> free_vars e0
   | ENot a | ESingle (_, a) -> free_vars a
   | EAdd (a, b)
@@ -295,13 +335,20 @@ let rec free_vars e : ctx =
   | ESubList (a, b) ->
       free_vars a @ free_vars b
 
+(** Decidable equality on a context entry, and membership in a context. *)
+let ctx_entry_eq (q1 : string * expr_ty) (q2 : string * expr_ty) : bool =
+  Util.string_eq (fst q1) (fst q2) && expr_ty_eq (snd q1) (snd q2)
+
+let rec mem_ctx (q : string * expr_ty) (g : ctx) : bool =
+  match g with [] -> false | e :: rest -> ctx_entry_eq q e || mem_ctx q rest
+
 (** An expression is scoped in [g] when every variable it mentions is a variable of [g] at the
     sort [g] gives it.
 
     This is check 7 of [Implementation/docs/InputFormat.md] §4.3, [Var(t) ⊆ V], which
     [Thesis/docs/LeanFormalization.md] §4.6 records as provable from the typing but not stated
     in [Proof/]. Here it is neither: it is checked at the boundary and then used. *)
-let scoped_in (g : ctx) e = List.for_all (fun q -> List.mem q g) (free_vars e)
+let scoped_in (g : ctx) e = Util.all (fun q -> mem_ctx q g) (free_vars e)
 
 (** The conjunction of a list of boolean expressions, right-nested.
 

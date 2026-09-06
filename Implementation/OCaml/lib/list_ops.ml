@@ -20,9 +20,13 @@
 
 open Color
 
+(** Whether [l] holds [v]. *)
+let rec mem_value (v : value) (l : value list) : bool =
+  match l with [] -> false | x :: rest -> value_eq x v || mem_value v rest
+
 (** How many times [l] holds [v]. *)
 let rec count_of l v =
-  match l with [] -> 0 | x :: rest -> (if x = v then 1 else 0) + count_of rest v
+  match l with [] -> 0 | x :: rest -> (if value_eq x v then 1 else 0) + count_of rest v
 
 (** The bag a list represents: every element with multiplicity one, so the coefficient of a
     value is the number of times the list holds it. *)
@@ -32,7 +36,7 @@ let bag_of_list (l : value list) : Bag.t = List.map (fun v -> (v, 1)) l
 let rec erase_first l v =
   match l with
   | [] -> []
-  | x :: rest -> if x = v then rest else x :: erase_first rest v
+  | x :: rest -> if value_eq x v then rest else x :: erase_first rest v
 
 (** [a] with one occurrence of each element of [b] removed. Definition 1's operation 6. *)
 let rec list_diff a b =
@@ -46,4 +50,4 @@ let rec list_diff a b =
 let rec sub_multiset a b =
   match a with
   | [] -> true
-  | x :: rest -> List.mem x b && sub_multiset rest (erase_first b x)
+  | x :: rest -> mem_value x b && sub_multiset rest (erase_first b x)

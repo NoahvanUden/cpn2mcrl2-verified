@@ -56,11 +56,13 @@ type net = {
     reading it at [c] means transporting along a proof of [a.color = c], and three lemmas exist
     only to push evaluation, free variables and scoping through that transport. This is the
     same trade as [src/Net.dfy] makes, and for the same reason: typing is not indexed here. *)
-let expr_at a c = if a.acolor = c then a.aexpr else EEmptyBag c
+let expr_at a c = if color_eq a.acolor c then a.aexpr else EEmptyBag c
 
-(* Lookups. Every one of these is a standard-library call; the corresponding block of
-   [src/Net.dfy] is about sixty lines of hand-written recursion, because a proof there has to
-   induct on the definition rather than on a library lemma. *)
+(* Lookups. These read as standard-library calls and half of them are: [List.map] and
+   [List.filter] are inside the fragment Cameleer reads, [List.for_all] and [List.find_opt]
+   are not. The corresponding block of [src/Net.dfy] is about sixty lines of hand-written
+   recursion, for a different reason again -- a proof there has to induct on the definition
+   rather than on a library lemma. *)
 
 let place_names n = List.map (fun d -> d.pname) n.places
 let trans_names n = List.map (fun t -> t.tname) n.transitions
@@ -69,12 +71,14 @@ let var_names (vs : ctx) = List.map fst vs
 (** The [(place, transition)] pairs of a set of arcs, which is what [A] being a set means. *)
 let arc_keys arcs = List.map (fun a -> (a.aplace, a.atrans)) arcs
 
-let find_place ps p = List.find_opt (fun d -> d.pname = p) ps
+let find_place ps p = Util.find (fun d -> Util.string_eq d.pname p) ps
 
 (** [C(p)], if [p] is a place of the net. *)
-let place_color n p = Option.map (fun d -> d.pcolor) (find_place n.places p)
+let place_color n p =
+  match find_place n.places p with Some d -> Some d.pcolor | None -> None
 
-let find_arc arcs p t = List.find_opt (fun a -> a.aplace = p && a.atrans = t) arcs
+let find_arc arcs p t =
+  Util.find (fun a -> Util.string_eq a.aplace p && Util.string_eq a.atrans t) arcs
 
 (** The arc [(p, t)], if there is one. *)
 let in_arc n p t = find_arc n.in_arcs p t
@@ -82,7 +86,7 @@ let in_arc n p t = find_arc n.in_arcs p t
 (** The arc [(t, p)], if there is one. *)
 let out_arc n t p = find_arc n.out_arcs p t
 
-let arcs_of arcs t = List.filter (fun a -> a.atrans = t) arcs
+let arcs_of arcs t = List.filter (fun a -> Util.string_eq a.atrans t) arcs
 
 (** [pre(t)], as the arcs into [t] rather than as the places — the same data, and it carries
     [E(p, t)] with it. *)
@@ -91,7 +95,7 @@ let pre n t = arcs_of n.in_arcs t
 (** [post(t)], as the arcs out of [t]. *)
 let post n t = arcs_of n.out_arcs t
 
-let arc_vars arcs = List.concat_map (fun a -> free_vars a.aexpr) arcs
+let arc_vars arcs = Util.flat_map (fun a -> free_vars a.aexpr) arcs
 
 (** [Var(t)], the variables appearing in the guard of [t] and in the arc expressions of the
     arcs connected to it.
@@ -118,44 +122,46 @@ let vars_no_dup n = Util.no_dup (var_names n.vars)
 (** No name is used twice across [P], [T] and [V]. The [P ∩ T = ∅] of Definition 4, extended to
     [V] because the emitted specification binds a place and a variable in one scope. *)
 let names_disjoint n =
-  List.for_all
-    (fun x -> (not (List.mem x (trans_names n))) && not (List.mem x (var_names n.vars)))
+  Util.all
+    (fun x ->
+      (not (mem_string x (trans_names n)))
+      && not (mem_string x (var_names n.vars)))
     (place_names n)
 
 (** No transition shares a name with a variable. *)
 let trans_vars_disjoint n =
-  List.for_all (fun x -> not (List.mem x (var_names n.vars))) (trans_names n)
+  Util.all (fun x -> not (mem_string x (var_names n.vars))) (trans_names n)
 
 (** [Bool ∈ Sigma], as Definition 5 requires. *)
-let bool_mem n = List.mem CBool n.colors
+let bool_mem n = mem_color CBool n.colors
 
 (** [C(p) ∈ Sigma] for every place. *)
-let color_mem n = List.for_all (fun d -> List.mem d.pcolor n.colors) n.places
+let color_mem n = Util.all (fun d -> mem_color d.pcolor n.colors) n.places
 
 (** Every variable of [V] is typed by a color, not by a bag or a list. *)
-let vars_are_colors n = List.for_all (fun (_, t) -> is_color_sort t) n.vars
+let vars_are_colors n = Util.all (fun q -> is_color_sort (snd q)) n.vars
 
 (** [Type[v] ∈ Sigma] for every variable of [V]. *)
 let var_type_mem n =
-  List.for_all
-    (fun (_, t) -> match t with CT c -> List.mem c n.colors | _ -> false)
+  Util.all
+    (fun q -> match snd q with CT c -> mem_color c n.colors | _ -> false)
     n.vars
 
 (** Every in-arc names a place of the net, at that place's color. *)
 let in_arc_place n =
-  List.for_all (fun a -> place_color n a.aplace = Some a.acolor) n.in_arcs
+  Util.all (fun a -> color_opt_eq (place_color n a.aplace) (Some a.acolor)) n.in_arcs
 
 (** Every out-arc names a place of the net, at that place's color. *)
 let out_arc_place n =
-  List.for_all (fun a -> place_color n a.aplace = Some a.acolor) n.out_arcs
+  Util.all (fun a -> color_opt_eq (place_color n a.aplace) (Some a.acolor)) n.out_arcs
 
 (** Every in-arc names a transition of the net. *)
 let in_arc_trans n =
-  List.for_all (fun a -> List.mem a.atrans (trans_names n)) n.in_arcs
+  Util.all (fun a -> mem_string a.atrans (trans_names n)) n.in_arcs
 
 (** Every out-arc names a transition of the net. *)
 let out_arc_trans n =
-  List.for_all (fun a -> List.mem a.atrans (trans_names n)) n.out_arcs
+  Util.all (fun a -> mem_string a.atrans (trans_names n)) n.out_arcs
 
 (** [A] is a set: at most one arc from a given place to a given transition. *)
 let in_arcs_no_dup n = Util.no_dup (arc_keys n.in_arcs)
@@ -164,33 +170,31 @@ let in_arcs_no_dup n = Util.no_dup (arc_keys n.in_arcs)
 let out_arcs_no_dup n = Util.no_dup (arc_keys n.out_arcs)
 
 (** [I(p)] is closed, so that [M0] is well-defined without a binding. *)
-let init_closed n = List.for_all (fun d -> free_vars d.pinit = []) n.places
+let init_closed n =
+  Util.all
+    (fun d -> match free_vars d.pinit with [] -> true | _ -> false)
+    n.places
 
 (** [Var(t) ⊆ V] for the guard. *)
-let guard_scoped n =
-  List.for_all (fun t -> scoped_in n.vars t.guard) n.transitions
+let guard_scoped n = Util.all (fun t -> scoped_in n.vars t.guard) n.transitions
 
 (** [Var(t) ⊆ V] for the in-arc expressions. *)
-let in_arc_scoped n = List.for_all (fun a -> scoped_in n.vars a.aexpr) n.in_arcs
+let in_arc_scoped n = Util.all (fun a -> scoped_in n.vars a.aexpr) n.in_arcs
 
 (** [Var(t) ⊆ V] for the out-arc expressions. *)
-let out_arc_scoped n = List.for_all (fun a -> scoped_in n.vars a.aexpr) n.out_arcs
+let out_arc_scoped n = Util.all (fun a -> scoped_in n.vars a.aexpr) n.out_arcs
 
 (** [Type[I(p)] = C(p)_MS]. Free in Lean, where [PlaceDecl.init] is an [Expr (.bag color)]. *)
-let init_typed n =
-  List.for_all (fun d -> well_typed d.pinit (BT d.pcolor)) n.places
+let init_typed n = Util.all (fun d -> well_typed d.pinit (BT d.pcolor)) n.places
 
 (** [Type[G(t)] = Bool], check 4 of [InputFormat.md] §4.3. Free in Lean. *)
-let guard_typed n =
-  List.for_all (fun t -> well_typed t.guard (CT CBool)) n.transitions
+let guard_typed n = Util.all (fun t -> well_typed t.guard (CT CBool)) n.transitions
 
 (** [Type[E(a)] = C(p)_MS] for an in-arc, the rest of check 5. Free in Lean. *)
-let in_arc_typed n =
-  List.for_all (fun a -> well_typed a.aexpr (BT a.acolor)) n.in_arcs
+let in_arc_typed n = Util.all (fun a -> well_typed a.aexpr (BT a.acolor)) n.in_arcs
 
 (** The same for an out-arc. *)
-let out_arc_typed n =
-  List.for_all (fun a -> well_typed a.aexpr (BT a.acolor)) n.out_arcs
+let out_arc_typed n = Util.all (fun a -> well_typed a.aexpr (BT a.acolor)) n.out_arcs
 
 (** The T1 validation of [Implementation/docs/InputFormat.md] §4.3.
 

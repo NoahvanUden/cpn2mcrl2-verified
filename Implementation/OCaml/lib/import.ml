@@ -35,6 +35,15 @@ let ( let* ) = Result.bind
 let ok = Result.ok
 let err msg = Error msg
 
+(** An association list sorted by its key, so that a JSON object is presented in a canonical
+    order.
+
+    This lives here and not in [Util] because it is the one utility the verified core does not
+    use, and [List.stable_sort] is outside the fragment Cameleer reads. A JSON object cannot
+    have two members of the same name, so stability is not observable; it is what makes this
+    agree with the insertion sort the other two translators use. *)
+let sort_by_key l = List.stable_sort (fun (a, _) (b, _) -> String.compare a b) l
+
 (* Reading JSON. *)
 
 let get_obj = function
@@ -74,7 +83,7 @@ let idx a i what =
     the same order, and so makes their output comparable as text. *)
 let entries j =
   let* o = get_obj j in
-  ok (Util.sort_by_key o)
+  ok (sort_by_key o)
 
 let check_ident kind s =
   if Print.is_safe_ident s then ok s
