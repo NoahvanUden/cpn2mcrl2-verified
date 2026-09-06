@@ -13,14 +13,15 @@ no `sorry` and no non-standard axiom.
 
 What that theorem is *about* is a mathematical function. `LPE.cond` is a Lean `Prop` and
 `LPE.next` is a Lean function, so an `LPE` in the formalization is the transition-system schema
-an LPE denotes — not a piece of mCRL2 text.
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 states the consequence
-plainly:
-
-> So the formalization does not establish that the translation produces a well-formed mCRL2 specification at all.
+an LPE denotes, not a piece of mCRL2 text. The consequence, which
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 records as the second of
+two limits, is that the formalization does not establish that $c_t$ and $g_t$ are *expressible*
+in the mCRL2 data language at all, let alone that they print as a well-formed specification.
 
 That is the gap an implementation lives in. A translator's whole job is the step the proof
 currently skips: turning $c_t$ and $g_t$ into terms, and terms into text.
+
+> **Half of that has since been closed inside `Proof/` itself**, by M2 — `CPN.LPESyntax` is Definition 14's output as syntax and `LPE` is what it denotes, so `toLPE_cond` and `toLPE_next` are theorems rather than `rfl`, for an arbitrary expression language. The half that remains is text, and it is where this directory still lives. See [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2 and [§6.1](#61-where-the-order-above-did-not-survive) below.
 
 ### 1.1 The reference implementation
 
@@ -119,6 +120,8 @@ unfolds the conjunction over $pre(t)$, `finiteV` enumerates $H_t$, and `finiteCo
 implementation these become the validation performed at T1 and the hypotheses the T2 proof runs
 on. `inArc` and `outArc` have to become decidable or finite so that $pre(t)$ computes.
 
+> **One of those five came true and four did not.** M2 made `finitePlaces` load-bearing in `Proof/` exactly as predicted — it is what `CPN.preList` enumerates — and §4.5 now records that it is no longer inert. `finiteV` was not needed, because $H_t$ is never enumerated, and the other three are needed only for emitting sort declarations, which is a translator's job and not `Proof/`'s. In the translators the side conditions land where this paragraph says: as T1 validation.
+
 **The expression language must be fixed and finite.** The notes assume one abstractly —
 [`CommonDefinitions.md`](../../Thesis/docs/CommonDefinitions.md) §2 says only that the tools in
 which the formalisms are modeled provide an expression language. A program cannot assume; it
@@ -150,7 +153,7 @@ items for a program rather than for the Lean development.
    they become components of $h_t$. Relating the value of $E(p,t)$ under a binding $b$ of the
    transition to the value of the translated term under $d \mapsto M$ and $h \mapsto b$ is the
    one genuinely new proof, and it is where the effort will actually go.
-5. **`toLPE_cond` stops being `rfl`.** Today it holds definitionally, because both sides are
+5. **`toLPE_cond` stops being `rfl`.** As things stand it holds definitionally, because both sides are
    transcriptions of one formula. Once `cond` is a term and `semantics` denotes it, the identity
    becomes a theorem proved from the evaluation equations of item 2. That is the point at which
    the translation acquires content beyond bookkeeping.

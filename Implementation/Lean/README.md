@@ -159,15 +159,18 @@ is the reason to believe `Expr.eval` is the semantics it is meant to be: under a
 environment an expression of sort `τ` evaluates to a value of sort `τ`, so the `Color.junk`
 fallback of `Expr.proj` is unreachable and `Value.asInt` and friends never misread a value.
 
-`Proof/MCRL2.lean` proves the first two by `rfl`, and
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 explains why that carries
-so little:
+`Proof/MCRL2.lean` proved the first two by `rfl` when this package was written, which is what
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 recorded as its second
+limit. Milestone M2 has since closed that, so the two theorems hold there as well — over an
+arbitrary expression language rather than the one concrete language fixed here. The contrast
+is no longer definitional-versus-proved but printed-versus-not: `Proof/` builds the terms and
+stops, since nothing there is text and so nothing there is accepted or rejected by
+`mcrl22lps`. The first two rows above are about the term
+[`Print.lean`](Cpn2mCrl2/Print.lean) prints.
 
-> With the condition a proposition and the next state a Lean function, an `LPE` is not a piece of mCRL2 text.
-
-Here neither is `rfl`. One side is a Lean predicate; the other is the *evaluation of a term*
-the translation assembled. They agree only because the term was assembled out of the right
-operations.
+Neither is `rfl` here either. One side is a Lean predicate; the other is the *evaluation of a
+term* the translation assembled. They agree only because the term was assembled out of the
+right operations.
 
 No `sorry`. The axioms are `propext`, `Quot.sound` and `Classical.choice`, which is what
 `#print axioms` reports for anything built on Lean's standard library.
