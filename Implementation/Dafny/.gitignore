@@ -1,0 +1,6 @@
+# Build output of `dafny build --target:cs --output cpn2mcrl2 src/*.dfy`.
+out/
+bin/
+obj/
+cpn2mcrl2
+cpn2mcrl2.*
