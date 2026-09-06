@@ -118,15 +118,16 @@ and, in [`src/ListEncoding.dfy`](src/ListEncoding.dfy), the refinement of
 | `ToLpeListStepOfStep` | and conversely |
 | `ListRelInit` | the two encodings start in markings that represent the same bags |
 
-`Proof/MCRL2.lean` proves the first two by `rfl`, and
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 explains why that carries so
-little:
+`Proof/MCRL2.lean` proved the first two of these by `rfl` when this package was written, which
+is what [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5 recorded as its
+second limit. Milestone M2 has since closed that, so they hold there as well — over an
+arbitrary expression language rather than the one fixed here. The contrast is no longer
+definitional-versus-proved but printed-versus-not: `Proof/` builds the terms and stops, since
+nothing there is text and so nothing there is accepted or rejected by `mcrl22lps`.
 
-> With the condition a proposition and the next state a Lean function, an `LPE` is not a piece of mCRL2 text.
-
-Here neither is definitional. One side is a predicate; the other is the *evaluation of a term*
-the translation assembled. They agree only because the term was assembled out of the right
-operations.
+Neither identity is definitional here either. One side is a predicate; the other is the
+*evaluation of a term* the translation assembled. They agree only because the term was
+assembled out of the right operations.
 
 [`src/Typing.dfy`](src/Typing.dfy) adds one property that nothing else depends on but that is the
 reason to believe `Eval` is the semantics it is meant to be: under a well-typed environment a
@@ -244,7 +245,7 @@ the way they are wrong is the result.
 
 > On obligations 1 to 3 — structural, first-order, finitely many cases — that should be nearly free, which is precisely where Lean is most tedious.
 
-> Where it will hurt is C4. The substitution lemma is an induction over expression syntax, and in Dafny that means writing an explicit recursive `lemma` and trusting the termination checker. This is a well-worn Dafny idiom rather than a novelty, but it will be longer than it looks.
+> Where it will hurt is C4. The substitution lemma is an induction over expression syntax, and in Dafny that means writing an explicit recursive `lemma` and trusting the termination checker. This is a well-worn Dafny idiom rather than a novelty, but it will be longer than it looks, and the resulting proof will not connect to Theorem 1 except on paper.
 
 ### 5.1 The five obligations, measured
 
