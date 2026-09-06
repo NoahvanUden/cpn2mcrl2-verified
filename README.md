@@ -18,8 +18,10 @@ formalisms it defines into a form that is easier to work from than the PDF.
 | [`Thesis/Thesis.pdf`](Thesis/Thesis.pdf) | The thesis (76 pages) |
 | [`Thesis/docs/`](Thesis/docs) | Per-formalism notes extracted from the thesis |
 | [`Proof/`](Proof) | A Lean 4 / Mathlib formalization of the definitions in the notes |
-| [`Implementation/`](Implementation/README.md) | The plan for a verifiable translator: what may be proved, the input format, the mCRL2 target, and which languages to build it in |
-| [`Implementation/Lean/`](Implementation/Lean) | The translator itself, in Lean 4 — CPN file in, mCRL2 text out, in two encodings, each proved bisimilar to the CPN’s reachability graph |
+| [`Implementation/`](Implementation/README.md) | The translators: what may be proved of one, the input format, the mCRL2 target, the milestones, and what building it three times showed |
+| [`Implementation/Lean/`](Implementation/Lean) | Translator #1, in Lean 4 — CPN file in, mCRL2 text out, in two encodings, each proved bisimilar to the CPN’s reachability graph |
+| [`Implementation/Dafny/`](Implementation/Dafny) | Translator #2 — the same specification again, with the proofs discharged by Z3 instead of by tactics |
+| [`Implementation/OCaml/`](Implementation/OCaml) | Translator #3 — byte-identical output, and nothing about it proved: the measured account of why Cameleer cannot verify it |
 | [`Tests/`](Tests/README.md) | The plan for validating the translators against a reachability graph computed outside this repository: the oracle contract, and the corpus to run it on |
 
 ### The notes
