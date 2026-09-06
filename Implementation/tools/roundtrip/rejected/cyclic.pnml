@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cyclic enumerations carry a successor operation, which the native language has no
+     term for. Rejected at the importer rather than mistranslated. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="cyc" type="http://www.pnml.org/version-2009/grammar/hlpng">
+    <page id="p">
+      <declaration><structure><declarations>
+        <namedsort id="C" name="C"><cyclicenumeration>
+          <feconstant id="a" name="a"/><feconstant id="b" name="b"/>
+        </cyclicenumeration></namedsort>
+      </declarations></structure></declaration>
+    </page>
+  </net>
+</pnml>

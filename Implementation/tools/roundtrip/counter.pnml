@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Example 3 of the thesis, in ISO/IEC 15909-2 HLPNG.
+
+     The same net as Implementation/*/fixtures/counter.cpn.json. Importing this with
+     pnml2cpn.py and translating the result must give byte-identical mCRL2, which is
+     the round-trip criterion of Tests/docs/Plan.md 3.1 item 4.
+
+     Element order matters: the importer preserves document order, and the emitted
+     LPE's parameters and summands follow the order of the places and transitions. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="counter" type="http://www.pnml.org/version-2009/grammar/hlpng">
+    <page id="page1">
+      <declaration>
+        <structure>
+          <declarations>
+            <namedsort id="Int" name="Int"><integer/></namedsort>
+            <namedsort id="Bool" name="Bool"><bool/></namedsort>
+            <variabledecl id="h" name="h">
+              <usersort declaration="Int"/>
+            </variabledecl>
+          </declarations>
+        </structure>
+      </declaration>
+
+      <place id="p1">
+        <type><structure><usersort declaration="Int"/></structure></type>
+        <hlinitialMarking>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><numberconstant value="1"><integer/></numberconstant></subterm>
+            </numberof>
+          </structure>
+        </hlinitialMarking>
+      </place>
+      <place id="p2">
+        <type><structure><usersort declaration="Int"/></structure></type>
+        <hlinitialMarking>
+          <structure><empty><usersort declaration="Int"/></empty></structure>
+        </hlinitialMarking>
+      </place>
+      <place id="p3">
+        <type><structure><usersort declaration="Int"/></structure></type>
+        <hlinitialMarking>
+          <structure><empty><usersort declaration="Int"/></empty></structure>
+        </hlinitialMarking>
+      </place>
+
+      <transition id="t1">
+        <condition>
+          <structure><booleanconstant value="true"/></structure>
+        </condition>
+      </transition>
+      <transition id="t2">
+        <condition>
+          <structure>
+            <lessthanorequal>
+              <subterm><variable refvariable="h"/></subterm>
+              <subterm><numberconstant value="3"><integer/></numberconstant></subterm>
+            </lessthanorequal>
+          </structure>
+        </condition>
+      </transition>
+      <transition id="t3">
+        <condition>
+          <structure>
+            <lessthan>
+              <subterm><numberconstant value="3"><integer/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </lessthan>
+          </structure>
+        </condition>
+      </transition>
+
+      <arc id="p1_t1" source="p1" target="t1">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="p2_t2" source="p2" target="t2">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="p2_t3" source="p2" target="t3">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="t1_p2" source="t1" target="p2">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm>
+                <addition>
+                  <subterm><variable refvariable="h"/></subterm>
+                  <subterm><numberconstant value="1"><integer/></numberconstant></subterm>
+                </addition>
+              </subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="t2_p1" source="t2" target="p1">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="t3_p3" source="t3" target="p3">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+    </page>
+  </net>
+</pnml>

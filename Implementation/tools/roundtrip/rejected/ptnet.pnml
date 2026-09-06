@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A place/transition net. Definition 5 is a coloured formalism, so this is refused. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="pt" type="http://www.pnml.org/version-2009/grammar/ptnet">
+    <page id="p"><place id="p1"/><transition id="t"/></page>
+  </net>
+</pnml>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The net Target.md 4.1 asks for: a place holding several tokens, moved out of it in
+     either order. The same net as Implementation/*/fixtures/multitoken.cpn.json. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="multitoken" type="http://www.pnml.org/version-2009/grammar/hlpng">
+    <page id="page1">
+      <declaration>
+        <structure>
+          <declarations>
+            <namedsort id="Int" name="Int"><integer/></namedsort>
+            <namedsort id="Bool" name="Bool"><bool/></namedsort>
+            <variabledecl id="h" name="h">
+              <usersort declaration="Int"/>
+            </variabledecl>
+          </declarations>
+        </structure>
+      </declaration>
+
+      <place id="src">
+        <type><structure><usersort declaration="Int"/></structure></type>
+        <hlinitialMarking>
+          <structure>
+            <add>
+              <subterm>
+                <numberof>
+                  <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+                  <subterm><numberconstant value="1"><integer/></numberconstant></subterm>
+                </numberof>
+              </subterm>
+              <subterm>
+                <numberof>
+                  <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+                  <subterm><numberconstant value="2"><integer/></numberconstant></subterm>
+                </numberof>
+              </subterm>
+            </add>
+          </structure>
+        </hlinitialMarking>
+      </place>
+      <place id="dst">
+        <type><structure><usersort declaration="Int"/></structure></type>
+        <hlinitialMarking>
+          <structure><empty><usersort declaration="Int"/></empty></structure>
+        </hlinitialMarking>
+      </place>
+
+      <transition id="move">
+        <condition>
+          <structure><booleanconstant value="true"/></structure>
+        </condition>
+      </transition>
+
+      <arc id="src_move" source="src" target="move">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="move_dst" source="move" target="dst">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm><variable refvariable="h"/></subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+    </page>
+  </net>
+</pnml>

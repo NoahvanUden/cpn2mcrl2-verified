@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An arc with no <hlinscription>. Definition 5 requires a bag-valued expression on
+     every arc, so there is nothing to default it to. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="bare" type="http://www.pnml.org/version-2009/grammar/hlpng">
+    <page id="p">
+      <declaration><structure><declarations>
+        <namedsort id="C" name="C"><finiteenumeration><feconstant id="a" name="a"/></finiteenumeration></namedsort>
+      </declarations></structure></declaration>
+      <place id="p1">
+        <type><structure><usersort declaration="C"/></structure></type>
+      </place>
+      <transition id="t"/>
+      <arc id="a1" source="p1" target="t"/>
+    </page>
+  </net>
+</pnml>

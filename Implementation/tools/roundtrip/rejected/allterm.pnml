@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- <all> puts one token of every colour in a place. InputFormat.md 4.1 has no such
+     term, and inventing one here would be a silent deviation. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="allnet" type="http://www.pnml.org/version-2009/grammar/hlpng">
+    <page id="p">
+      <declaration><structure><declarations>
+        <namedsort id="C" name="C"><finiteenumeration>
+          <feconstant id="a" name="a"/><feconstant id="b" name="b"/>
+        </finiteenumeration></namedsort>
+      </declarations></structure></declaration>
+      <place id="p1">
+        <type><structure><usersort declaration="C"/></structure></type>
+        <hlinitialMarking><structure><all><usersort declaration="C"/></all></structure></hlinitialMarking>
+      </place>
+    </page>
+  </net>
+</pnml>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The `jobs` fixture, as close as ISO/IEC 15909-2 can come to it.
+
+     It is NOT the same net as Implementation/*/fixtures/jobs.cpn.json, and that is the
+     finding: the fixture's guard is proj(j, state) = fresh, and standard PNML has no
+     projection operator on a product sort. A tuple is constructed with <tuple> and
+     taken apart by binding a tuple of variables on the in-arc, so the same behaviour
+     is expressed with two variables and no projection.
+
+     The consequence for the round-trip criterion of Tests/docs/Plan.md 3.1 item 4:
+     this imports and translates fine, and its LTS is bisimilar to jobs.aut, but the
+     emitted text is not byte-identical to the fixture's, because it is a different
+     net that happens to have the same behaviour. See tools/README.md 3.3. -->
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
+  <net id="jobs" type="http://www.pnml.org/version-2009/grammar/symmetricnet">
+    <page id="page1">
+      <declaration>
+        <structure>
+          <declarations>
+            <namedsort id="Int" name="Int"><integer/></namedsort>
+            <namedsort id="Bool" name="Bool"><bool/></namedsort>
+            <namedsort id="Status" name="Status">
+              <finiteenumeration>
+                <feconstant id="fresh" name="fresh"/>
+                <feconstant id="done" name="done"/>
+              </finiteenumeration>
+            </namedsort>
+            <namedsort id="Job" name="Job">
+              <productsort>
+                <usersort declaration="Int"/>
+                <usersort declaration="Status"/>
+                <toolspecific tool="cpn2mcrl2" version="1">
+                  <fieldnames>
+                    <field name="num"/>
+                    <field name="state"/>
+                  </fieldnames>
+                </toolspecific>
+              </productsort>
+            </namedsort>
+            <variabledecl id="n" name="n"><usersort declaration="Int"/></variabledecl>
+            <variabledecl id="s" name="s"><usersort declaration="Status"/></variabledecl>
+          </declarations>
+        </structure>
+      </declaration>
+
+      <place id="pending">
+        <type><structure><usersort declaration="Job"/></structure></type>
+        <hlinitialMarking>
+          <structure>
+            <add>
+              <subterm>
+                <numberof>
+                  <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+                  <subterm>
+                    <tuple>
+                      <subterm><numberconstant value="1"><integer/></numberconstant></subterm>
+                      <subterm><useroperator declaration="fresh"/></subterm>
+                    </tuple>
+                  </subterm>
+                </numberof>
+              </subterm>
+              <subterm>
+                <numberof>
+                  <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+                  <subterm>
+                    <tuple>
+                      <subterm><numberconstant value="2"><integer/></numberconstant></subterm>
+                      <subterm><useroperator declaration="fresh"/></subterm>
+                    </tuple>
+                  </subterm>
+                </numberof>
+              </subterm>
+            </add>
+          </structure>
+        </hlinitialMarking>
+      </place>
+      <place id="archive">
+        <type><structure><usersort declaration="Job"/></structure></type>
+        <hlinitialMarking>
+          <structure><empty><usersort declaration="Job"/></empty></structure>
+        </hlinitialMarking>
+      </place>
+
+      <transition id="finish">
+        <condition>
+          <structure>
+            <equality>
+              <subterm><variable refvariable="s"/></subterm>
+              <subterm><useroperator declaration="fresh"/></subterm>
+            </equality>
+          </structure>
+        </condition>
+      </transition>
+
+      <arc id="pending_finish" source="pending" target="finish">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm>
+                <tuple>
+                  <subterm><variable refvariable="n"/></subterm>
+                  <subterm><variable refvariable="s"/></subterm>
+                </tuple>
+              </subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+      <arc id="finish_archive" source="finish" target="archive">
+        <hlinscription>
+          <structure>
+            <numberof>
+              <subterm><numberconstant value="1"><positive/></numberconstant></subterm>
+              <subterm>
+                <tuple>
+                  <subterm><variable refvariable="n"/></subterm>
+                  <subterm><useroperator declaration="done"/></subterm>
+                </tuple>
+              </subterm>
+            </numberof>
+          </structure>
+        </hlinscription>
+      </arc>
+    </page>
+  </net>
+</pnml>
