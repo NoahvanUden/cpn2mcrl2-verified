@@ -42,7 +42,8 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Milestones M0, M2, M3, M4 and M6 are done, and M5 is half done.
+Milestones M0, M2, M3, M4, M5 and M6 are done — M5 as a negative result, which is what that
+milestone turned out to have to deliver and is set out below.
 [`Implementation/Lean/`](../Lean) is a Lean 4 translator that reads the native CPN format of
 [`InputFormat.md`](InputFormat.md) §4, validates it,
 builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
@@ -146,9 +147,12 @@ What the third translator does buy is the differential test, now three-way. Six 
 — three fixtures, two encodings — identical across three developments that share no code and
 were written against these documents rather than against each other.
 
-Not done: the PNML importers of M7, and the proofs of M5. See
-[`Implementation/Lean/README.md`](../Lean/README.md) §5,
-[`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 and [`Plan.md`](Plan.md) §6.1.
+Not done: the PNML importers of M7. See
+[`Implementation/Lean/README.md`](../Lean/README.md) §5.
+
+M5's proofs are not done and are not planned, which is the whole of what that milestone found.
+[`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 records what finishing them would
+take, so the decision is reversible if the tooling changes.
 
 Before any of that, M0's hand-written check that the target syntax is real: Example 9 of
 [`mCRL2.md`](../../Thesis/docs/mCRL2.md) was written out as mCRL2 text in both encodings, both
