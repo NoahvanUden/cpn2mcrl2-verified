@@ -20,6 +20,7 @@ formalisms it defines into a form that is easier to work from than the PDF.
 | [`Proof/`](Proof) | A Lean 4 / Mathlib formalization of the definitions in the notes |
 | [`Implementation/`](Implementation/README.md) | The plan for a verifiable translator: what may be proved, the input format, the mCRL2 target, and which languages to build it in |
 | [`Implementation/Lean/`](Implementation/Lean) | The translator itself, in Lean 4 — CPN file in, mCRL2 text out, in two encodings, each proved bisimilar to the CPN’s reachability graph |
+| [`Tests/`](Tests/README.md) | The plan for validating the translators against a reachability graph computed outside this repository: the oracle contract, and the corpus to run it on |
 
 ### The notes
 
