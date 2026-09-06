@@ -42,7 +42,7 @@ Read [`Plan.md`](Plan.md) for the argument. Its three conclusions:
 
 ## Status
 
-Milestones M0, M3 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
+Milestones M0, M3, M4 and M6 are done. [`Implementation/Lean/`](../Lean) is a Lean 4 translator
 that reads the native CPN format of [`InputFormat.md`](InputFormat.md) §4, validates it,
 builds the LPE of Definition 14 as *terms*, and prints the mCRL2 encoding of
 [`Target.md`](Target.md) §1. Tier T2 is proved there: `Net.toLpe_cond` and `Net.toLpe_next`
@@ -52,8 +52,9 @@ Example 3, whose emitted specification reproduces the corrected seven-state chai
 Example 5.
 
 M1 was skipped rather than done: the plan puts an unverified OCaml prototype first as an
-oracle, and the Lean translator arrived before anything needed one. That leaves the M4 and M5
-comparison without the differential oracle M1 was to provide.
+oracle, and the Lean translator arrived before anything needed one. That left the M4 and M5
+comparison without the differential oracle M1 was to provide — and M4 turned out not to need
+one, because the two verified translators are each other's oracle. See below.
 
 The composition of T2 with Theorem 1 — which [`Languages.md`](Languages.md) §3 makes the
 reason Lean is first — is now a Lean term and not an argument in prose:
@@ -74,6 +75,27 @@ lemma: `Net.bisimilar_reachabilityGraph_emittedList` puts the fast output on exa
 footing the slow one has. §5's prediction is visible in the fixtures — on
 `multitoken.cpn.json`, the net [`Target.md`](Target.md) §4.1 asks for, the bag encoding gives
 four states and the list encoding five, and `ltscompare -ebisim` reports them equal anyway.
+
+**M4, the second implementation.** [`Implementation/Dafny/`](../Dafny) is the same translator
+again, both backends, with T1, T2 and T5 discharged by Z3 instead of by tactics — 266 proof
+obligations, no assumptions, checked for vacuity. It is what [`Languages.md`](Languages.md) §5
+proposes the multi-language exercise for, and the answer it gives is mostly negative:
+**obligations 1 to 3 were already free in Lean, so SMT had nothing to give away, and obligation
+4 — the one [`Plan.md`](Plan.md) §7 rates the project's high risk — was free in both.** What
+made obligation 4 cheap was a design decision rather than a language feature, namely that
+scoping is extrinsic on both sides, and the plan's risk assessment was aimed at the wrong axis:
+the cost was never dependent types against SMT, it was intrinsic against extrinsic *scoping*.
+Where the two did separate is not on the plan's list at all — the T2 file is the one file that
+is *smaller* in Dafny, 175 lines against 266, because Z3 needs none of the `show` steps Lean
+needs to force definitional unfolding. See
+[`Implementation/Dafny/README.md`](../Dafny/README.md) §5.
+
+The differential test M1 was to supply comes free with the second implementation: all six
+emitted specifications — three fixtures, two encodings — are **byte-identical** between the two
+translators, which share no code and were written against these documents rather than against
+each other. Dafny cannot compose with Theorem 1, and [`Languages.md`](Languages.md) §3 says so
+in advance; what M4 buys is an independent proof of the same T2 statement and a differential
+test with real teeth, not a doubled guarantee.
 
 Not done: the PNML importers of M7. See
 [`Implementation/Lean/README.md`](../Lean/README.md) §5.
