@@ -86,13 +86,14 @@ python Tests/scripts/fuzz.py --runs=50      # random nets, shrunk on failure
 python Tests/scripts/mcc.py <dir> --survey  # how much of a PNML corpus fits, and why not
 ```
 
-`check.sh` runs from Git Bash and from WSL alike. It has to work out how to call each
-translator, because they are not all native to the same shell — the Lean and Dafny binaries
-are Windows `.exe` and the OCaml one is ELF — so it probes each of them on a net that must
-translate before believing any verdict, and the summary names which ones actually ran. A
-translator it cannot run takes part in no leg; if none runs it exits 2 rather than reporting
-a green corpus. See [`docs/Findings.md`](docs/Findings.md) §11 for why that is not
-over-engineering.
+Both run from Git Bash and from WSL alike. They have to work out how to call each translator,
+because they are not all native to the same shell — the Lean and Dafny binaries are Windows
+`.exe` and the OCaml one is ELF — so each is probed on a net that must translate before any
+verdict is believed, and the summary names which ones actually ran and how. A translator that
+cannot run takes part in no leg; if too few run, the run stops rather than reporting a green
+corpus. `scripts/toolchain.py` holds that logic for the Python side and `check.sh` carries it
+in shell. See [`docs/Findings.md`](docs/Findings.md) §11 for why it is not over-engineering:
+the assumption it replaces turned a completely broken toolchain into a green leg D.
 
 The oracle lives in `Tests/.venv` (`pip install snakes`), so nothing outside this directory
 depends on Python. Set `MCRL2_BIN` if mCRL2 is not in a standard place, and `PYTHON` to point
@@ -109,5 +110,7 @@ harness is live is to break something and watch it complain:
   name the markings they disagree about;
 - point one of the `BIN_*` variables at a nonexistent file — that translator must drop out
   of the summary's "translators used", and out of leg D's refusers.
+
+`fuzz.py` answers to the same three, and reports the failing seed with a shrunk net.
 
 If a mutation you expect to break something leaves the run green, that is a finding.

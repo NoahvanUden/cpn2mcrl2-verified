@@ -378,6 +378,29 @@ This also makes the harness work in both shells, which it previously did not: WS
 drives the two Windows translators through `wslpath`, and Git Bash still drives the
 Linux OCaml binary through `wsl.exe`.
 
+**`fuzz.py` had the same bug mirrored**, and it was reported the same way — every seed
+failing with `leg A: lean emitted nothing` under WSL. It hard-coded the opposite
+assumption from `check.sh`: Lean and Dafny native, OCaml through `wsl.exe`. The probing
+is now a module, [`scripts/toolchain.py`](../scripts/toolchain.py), which `fuzz.py`
+imports; `check.sh` keeps its own copy because it is shell. Two details cost real time
+and are recorded there rather than rediscovered:
+
+- **Only the arguments are converted, never the executable.** Under WSL a Windows `.exe`
+  must still be exec'd by the path Linux has — `/mnt/c/...`, which binfmt interop hands
+  to Windows. Converting the executable too gives `execve` a `C:\...` string, which is
+  not a path it has, and the translator looks unusable.
+- **The probe file has to live where both sides can see it.** `tempfile.mkstemp()` under
+  WSL puts it on the Linux filesystem, which Windows reaches only as a UNC path; the
+  probe then fails and reports a perfectly good translator as broken. It goes in
+  `Tests/out/`, on the Windows drive, visible from both.
+
+`fuzz.py` was the more dangerous of the two, because its oracle call had the *silent*
+version of the failure: exit 2 means "the adapter cannot express this net", it returns
+`None` for that — not a verdict, not a failure — and a Python that cannot open `run.py`
+exits 2 as well. Under WSL it would have skipped legs B and B2 on every net without
+saying anything. It now needs two translators to run at all, and says which ones ran, in
+which convention, and whether the oracle was among them.
+
 **The same trap, one layer down.** `oracle/run.py` exits 2 for "this net is outside what
 the adapter can express" — and a Python that cannot open `run.py` at all also exits 2. A
 broken oracle invocation was therefore reported as `cannot express this net -- recorded,

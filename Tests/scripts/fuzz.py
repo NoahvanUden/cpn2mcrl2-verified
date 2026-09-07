@@ -45,8 +45,11 @@ TESTS = os.path.dirname(HERE)
 ROOT = os.path.dirname(TESTS)
 OUT = os.path.join(TESTS, "out", "fuzz")
 
+sys.path.insert(0, HERE)
+from toolchain import Tool  # noqa: E402
+
 # The two enumerations are given DISJOINT constructor names. Sharing one is a real
-# defect -- corpus/known-failing/shared-ctor.cpn.json, Findings.md 8 -- and until it is
+# defect -- corpus/rejected/shared-ctor.cpn.json, Findings.md 8 -- and until it is
 # decided, generating it again at a quarter of all seeds would drown out everything
 # else the search might turn up.
 COLORS = {
@@ -68,41 +71,49 @@ def mcrl2_bin():
 
 
 MCRL2 = mcrl2_bin()
-VENV = os.path.join(TESTS, ".venv", "Scripts", "python.exe")
-if not os.path.exists(VENV):
-    VENV = os.path.join(TESTS, ".venv", "bin", "python")
-if not os.path.exists(VENV):
-    VENV = sys.executable
 
-TRANSLATORS = {
-    "lean": [os.path.join(ROOT, "Implementation", "Lean", ".lake", "build", "bin",
-                          "cpn2mcrl2.exe")],
-    "dafny": [os.path.join(ROOT, "Implementation", "Dafny", "cpn2mcrl2.exe")],
+# Which binaries exist is a different question from how to call them: see toolchain.py,
+# and Findings.md 11 for what assuming the answer costs. Every one of these is probed on
+# a net that must translate before it is believed, and one that cannot run takes part in
+# no leg -- rather than silently agreeing with everything, which is what a translator
+# that writes no output file looks like from here.
+PROBE_NET = os.path.join(TESTS, "corpus", "tier1", "one-step.cpn.json")
+
+TOOLS = {
+    "lean": Tool("lean", os.path.join(ROOT, "Implementation", "Lean", ".lake", "build",
+                                      "bin", "cpn2mcrl2.exe")),
+    "dafny": Tool("dafny", os.path.join(ROOT, "Implementation", "Dafny",
+                                        "cpn2mcrl2.exe")),
+    "ocaml": Tool("ocaml", os.path.join(ROOT, "Implementation", "OCaml", "_build",
+                                        "default", "bin", "main.exe")),
 }
-_ocaml = os.path.join(ROOT, "Implementation", "OCaml", "_build", "default", "bin",
-                      "main.exe")
+
+_venv = os.path.join(TESTS, ".venv", "Scripts", "python.exe")
+if not os.path.exists(_venv):
+    _venv = os.path.join(TESTS, ".venv", "bin", "python")
+if not os.path.exists(_venv):
+    _venv = sys.executable
+ORACLE = Tool("oracle", _venv)
+
+USABLE = []
 
 
-def wslpath(p):
-    p = p.replace("\\", "/")
-    if len(p) > 1 and p[1] == ":":
-        p = "/mnt/" + p[0].lower() + p[2:]
-    return p
-
-
-def ocaml_available():
-    if not os.path.exists(_ocaml):
-        return False
-    try:
-        subprocess.run(["wsl.exe", "-e", "bash", "-c",
-                        "test -x '%s'" % wslpath(_ocaml)], check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    except Exception:
-        return False
-
-
-OCAML = ocaml_available()
+def probe_toolchain():
+    """Work out how to call everything, once, before any net is generated."""
+    global USABLE
+    for name in ("lean", "dafny", "ocaml"):
+        TOOLS[name].probe(lambda out: [PROBE_NET, out], suffix=".mcrl2",
+                          out_dir=OUT)
+    USABLE = [n for n in ("lean", "dafny", "ocaml") if TOOLS[n].mode != "none"]
+    # run.py exits 2 both for "the adapter cannot express this net" and, being Python,
+    # for "I could not open run.py". Probing tells the two apart once, so that the exit
+    # status can be trusted for every net after it.
+    # run.py takes a PREFIX and writes <prefix>.oracle.aut, so the probe hands it the
+    # temporary name with that suffix removed and then looks for the file it named.
+    ORACLE.probe(lambda out: [os.path.join(TESTS, "oracle", "run.py"), PROBE_NET,
+                              out[:-len(".oracle.aut")]],
+                 suffix=".oracle.aut", out_dir=OUT)
+    return USABLE
 
 
 # ------------------------------------------------------------------ generation
@@ -188,12 +199,7 @@ def run(cmd, **kw):
 def translate(which, flag, src, dst):
     if os.path.exists(dst):
         os.remove(dst)
-    if which == "ocaml":
-        args = [wslpath(_ocaml)] + ([flag] if flag else []) + \
-               [wslpath(src), wslpath(dst)]
-        run(["wsl.exe", "-e", "bash", "-c", " ".join("'%s'" % a for a in args)])
-    else:
-        run(TRANSLATORS[which] + ([flag] if flag else []) + [src, dst])
+    TOOLS[which].run(([flag] if flag else []) + [src, dst])
     return os.path.exists(dst)
 
 
@@ -209,7 +215,7 @@ def check(net, tag):
     with open(src, "w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(net, indent=2) + "\n")
 
-    names = ["lean", "dafny"] + (["ocaml"] if OCAML else [])
+    names = list(USABLE)
     auts = {}
     for flag, sfx in [("", ""), ("--list", ".list")]:
         texts = {}
@@ -242,8 +248,10 @@ def check(net, tag):
     if not bisim(auts[""], auts[".list"]):
         return "leg C: the two encodings are not bisimilar"
 
-    r = run([VENV, os.path.join(TESTS, "oracle", "run.py"), src,
-             os.path.join(OUT, tag)])
+    if ORACLE.mode == "none":
+        return None            # no oracle: legs A, C and T0 only. main() says so.
+    r = ORACLE.run([os.path.join(TESTS, "oracle", "run.py"), src,
+                    os.path.join(OUT, tag)])
     if r.returncode == 2:
         return None            # the oracle cannot express it; not a verdict
     if r.returncode == 3:
@@ -333,6 +341,19 @@ def main(argv):
         sys.stderr.write("mcrl22lps not found\n")
         return 2
 
+    if not os.path.exists(PROBE_NET):
+        sys.stderr.write("the probe net %s is missing\n" % PROBE_NET)
+        return 2
+    probe_toolchain()
+    if len(USABLE) < 2:
+        sys.stderr.write(
+            "leg A needs two translators to disagree; %s could run.\n"
+            % (("only " + USABLE[0]) if USABLE else "none"))
+        for t in TOOLS.values():
+            sys.stderr.write("  %-6s %s\n" % (t.name, t.binary))
+        sys.stderr.write("Build them, or run this from the shell they were built for.\n")
+        return 2
+
     os.makedirs(OUT, exist_ok=True)
     failures = 0
     for i in range(runs):
@@ -363,8 +384,18 @@ def main(argv):
             f.write(json.dumps(small, indent=2) + "\n")
         sys.stdout.write("  shrunk to %s\n" % path)
 
-    sys.stdout.write("%d nets, %d failure(s)%s\n"
-                     % (runs, failures, "" if OCAML else "  (OCaml not runnable)"))
+    sys.stdout.write("%d nets, %d failure(s)\n" % (runs, failures))
+    sys.stdout.write("  translators: %s\n"
+                     % ", ".join("%s (%s)" % (n, TOOLS[n].mode) for n in USABLE))
+    if ORACLE.mode != "none":
+        sys.stdout.write("  oracle: %s (%s)\n" % (ORACLE.binary, ORACLE.mode))
+    missing = [n for n in TOOLS if TOOLS[n].mode == "none"]
+    if missing:
+        sys.stdout.write("  not runnable, and in no leg: %s\n" % ", ".join(sorted(missing)))
+    if ORACLE.mode == "none":
+        sys.stdout.write(
+            "  THE ORACLE DID NOT RUN (%s), so legs B and B2 checked nothing:\n"
+            "  the nets above were only compared against each other.\n" % ORACLE.binary)
     return 1 if failures else 0
 
 
