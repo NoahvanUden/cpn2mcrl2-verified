@@ -56,17 +56,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # setup-dafny-action shells out to actions/setup-dotnet internally (dafny build
+      # --target:cs needs a dotnet to compile the C# it emits), which defaults to installing
+      # into /usr/share/dotnet — root this self-hosted runner doesn't have. Pointing
+      # DOTNET_INSTALL_DIR at a writable path first (its documented self-hosted-runner escape
+      # hatch) fixes that without touching the action itself; confirmed against this runner.
+      - name: Point .NET installs at a writable directory
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/dotnet" >> "$GITHUB_ENV"
+
+      # Its release archive bundles Z3 too (confirmed: 4.12.1 and 4.14.1 ship inside it) and
+      # Dafny resolves it on its own — no separate Z3 install needed.
       - name: Install Dafny
         uses: dafny-lang/setup-dafny-action@v1
         with:
           dafny-version: "4.11.0"
-
-      # setup-dafny-action's release archive bundles Z3 (confirmed: 4.12.1 and 4.14.1 ship
-      # inside it) and Dafny resolves it on its own — no separate Z3 install needed.
-      - name: Install .NET — `dafny build --target:cs` shells out to `dotnet build`
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
 
       - name: Build
         working-directory: Implementation/Dafny
