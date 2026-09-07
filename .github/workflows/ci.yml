@@ -1,0 +1,122 @@
+# Builds and, where a proof exists, checks it — the same three languages the repository is
+# about, run independently. This is the cheapest evidence that the claims in the READMEs
+# type-check: no `sorry` in Lean, no unproved lemma in Dafny, and every translator compiles.
+#
+# What this does NOT run: Tests/scripts/check.sh, which needs the mCRL2 toolset and SNAKES,
+# and is heavier than a build workflow should be. See Tests/README.md for how to run that
+# by hand.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lean:
+    name: Lean — Proof/, the translator, and the bridge
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      # Order matters: Proof/ populates the shared Mathlib download that Bridge/ points at
+      # (Implementation/Lean/Bridge/lakefile.toml sets packagesDir to Proof/.lake/packages,
+      # so it never fetches Mathlib a second time), and Bridge/ requires Cpn2mCrl2 by path,
+      # so building that translator before Bridge means nothing there is fetched blind.
+      - name: Proof/ — the formalization, Theorem 1 included
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Proof
+          use-mathlib-cache: "true"
+
+      - name: Implementation/Lean/ — translator #1 (no Mathlib dependency)
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Implementation/Lean
+          use-mathlib-cache: "false"
+
+      - name: Implementation/Lean/Bridge/ — composes T2 with Theorem 1
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: Implementation/Lean/Bridge
+          use-mathlib-cache: "true"
+
+      - name: Translate Example 3, both encodings
+        run: |
+          BIN=Implementation/Lean/.lake/build/bin/cpn2mcrl2
+          "$BIN" Implementation/Lean/fixtures/counter.cpn.json /tmp/counter.mcrl2
+          "$BIN" --list Implementation/Lean/fixtures/counter.cpn.json /tmp/counter.list.mcrl2
+          echo "--- bag encoding ---"; cat /tmp/counter.mcrl2
+          echo "--- list encoding ---"; cat /tmp/counter.list.mcrl2
+
+  dafny:
+    name: Dafny — build and verify
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dafny
+        uses: dafny-lang/setup-dafny-action@v1
+        with:
+          dafny-version: "4.11.0"
+
+      # setup-dafny-action's release archive bundles Z3 (confirmed: 4.12.1 and 4.14.1 ship
+      # inside it) and Dafny resolves it on its own — no separate Z3 install needed.
+      - name: Install .NET — `dafny build --target:cs` shells out to `dotnet build`
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        working-directory: Implementation/Dafny
+        run: dafny build --standard-libraries --target:cs --output cpn2mcrl2 src/*.dfy
+
+      # Scoped to the files the README's own table calls proved, rather than src/*.dfy: with
+      # --warn-contradictory-assumptions, that flag's stricter assertion mode makes one VC in
+      # Import.dfy (outside the trust boundary, and not part of any claim below) time out --
+      # reproduced locally, unrelated to whether anything is actually proved. Dropping either
+      # the file or the flag avoids it; here it's the file, since the flag is what the vacuity
+      # claim needs and Import.dfy was never part of that claim.
+      - name: Verify — the proof obligations, checked by Z3, checked for vacuity
+        working-directory: Implementation/Dafny
+        run: >
+          dafny verify --standard-libraries --warn-contradictory-assumptions
+          src/Util.dfy src/Color.dfy src/Bag.dfy src/ListOps.dfy src/Expr.dfy src/Typing.dfy
+          src/Net.dfy src/Semantics.dfy src/Lpe.dfy src/Translate.dfy src/Correct.dfy
+          src/ListEncoding.dfy src/Print.dfy src/PrintList.dfy
+
+      - name: Translate Example 3, both encodings
+        working-directory: Implementation/Dafny
+        run: |
+          ./cpn2mcrl2 fixtures/counter.cpn.json /tmp/counter.mcrl2
+          ./cpn2mcrl2 --list fixtures/counter.cpn.json /tmp/counter.list.mcrl2
+          echo "--- bag encoding ---"; cat /tmp/counter.mcrl2
+          echo "--- list encoding ---"; cat /tmp/counter.list.mcrl2
+
+  ocaml:
+    name: OCaml — translator #3
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      # This runner already carries a named switch with the translator's one real dependency
+      # (yojson, used only by the importer, which is outside the trust boundary) installed —
+      # built and confirmed working during setup, so it's used as-is rather than paying for a
+      # fresh compiler + package fetch on every run. A runner without it would need
+      # ocaml/setup-ocaml@v3 plus `opam install dune yojson` here instead.
+      - name: Build
+        working-directory: Implementation/OCaml
+        run: |
+          eval $(opam env --switch=cpn2mcrl2 --set-switch)
+          dune build
+
+      - name: Translate Example 3, both encodings
+        working-directory: Implementation/OCaml
+        run: |
+          eval $(opam env --switch=cpn2mcrl2 --set-switch)
+          BIN=_build/default/bin/main.exe
+          "$BIN" fixtures/counter.cpn.json /tmp/counter.mcrl2
+          "$BIN" --list fixtures/counter.cpn.json /tmp/counter.list.mcrl2
+          echo "--- bag encoding ---"; cat /tmp/counter.mcrl2
+          echo "--- list encoding ---"; cat /tmp/counter.list.mcrl2
