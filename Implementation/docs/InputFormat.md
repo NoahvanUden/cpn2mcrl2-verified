@@ -226,6 +226,11 @@ available as hypotheses to the T2 proof. These are exactly the side conditions
 Checks 4 to 6 are a type checker for [§4.1](#41-sorts-and-expressions), and are what let the
 core hold an intrinsically typed AST from that point on.
 
+8. The **nullary constructors of $\Sigma$ are distinct**: no two enumerations declare a
+   constructor of the same name, and no field-less record shares its name with one.
+
+> **Addition to the thesis.** Definition 5 requires nothing of the kind — colour sets are sets, and two of them may perfectly well both contain an element spelled $a$. Check 8 is imposed by the *target*, exactly as [`Target.md`](Target.md) §1's reserved keywords are: an enumeration prints as `struct a | b` and a field-less record as `struct R`, so both put constants into one mCRL2 namespace, and `mcrl22lps` refuses two constants of the same name even in different sorts. Without the check all three translators emit text the toolset rejects. Found by the random search of [`Tests/`](../../Tests/README.md); see [`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §8.
+
 ---
 
 ## 5. Sources

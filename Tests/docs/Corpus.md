@@ -136,6 +136,7 @@ all three translators, naming the check that failed:
 | 7 | `undeclared-var` | An arc using a variable that is not in $V$ |
 | — | `shadow` | A place and a variable sharing a name — `Net.Valid.namesDisjoint`, which is an *addition* to Definition 4 rather than one of the seven — **exists today** |
 | — | `keyword` | `val` as an identifier, which is [`Target.md`](../../Implementation/docs/Target.md) §1 rather than a §4.3 check — **exists today** |
+| 8 | `shared-ctor` | Two enumerations declaring a constructor of the same name — the check added after [`Findings.md`](Findings.md) §8 |
 
 > **Corrected.** An earlier version of this table put `badcolor` at check 2, `shadow` at check 7, and did not distinguish `keyword` from the §4.3 list. All three were wrong: the table was written from `InputFormat.md` §4.3 without opening the fixtures it classified. See [`Findings.md`](Findings.md) §7.
 

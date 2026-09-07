@@ -610,7 +610,9 @@ module Import {
     * core receives. */
   function ExplainInvalid(n: Net): seq<string>
   {
-      No(PlacesNoDup(n), "two places share a name")
+      No(CtorsNoDup(n),
+         "two colors declare a constructor of the same name, which mCRL2 refuses")
+    + No(PlacesNoDup(n), "two places share a name")
     + No(TransNoDup(n), "two transitions share a name")
     + No(VarsNoDup(n), "two variables share a name")
     + No(NamesDisjoint(n), "a place shares its name with a transition or a variable")

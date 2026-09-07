@@ -106,6 +106,30 @@ let var_of n t =
 (* The T1 validation of [Implementation/docs/InputFormat.md] §4.3, one named predicate per
    check, so that [Import.explain_invalid] can say which one failed. *)
 
+(** The nullary constructors the emitted specification declares.
+
+    [Print] writes an enumeration as [struct id1 | id2 | ...] and a record with no fields as
+    [struct R], so both contribute {i constants} to one mCRL2 namespace. Two constants of the
+    same name are refused by [mcrl22lps] -- "Double declaration of constructor constant" --
+    even in different sorts. A record with fields contributes a constructor of positive arity,
+    which may share a name with a constant, so it does not appear here. *)
+let nullary_ctors n =
+  List.concat_map
+    (fun c ->
+      match c with
+      | Color.CEnum (_, ids) -> ids
+      | Color.CRecord (name, []) -> [ name ]
+      | _ -> [])
+    n.colors
+
+(** The nullary constructors of [Sigma] are distinct.
+
+    Not one of the seven checks of [InputFormat.md] §4.3, and not a requirement of
+    Definition 5: colour sets are sets, and two of them may both contain an element spelled
+    [a]. It is a constraint the target imposes, like [Target.md] §1's reserved keywords. See
+    [Tests/docs/Findings.md] §8. *)
+let ctors_no_dup n = Util.no_dup (nullary_ctors n)
+
 (** The places have distinct names: [P] is a set. *)
 let places_no_dup n = Util.no_dup (place_names n)
 
@@ -204,4 +228,4 @@ let valid n =
   && var_type_mem n && in_arc_place n && out_arc_place n && in_arc_trans n
   && out_arc_trans n && in_arcs_no_dup n && out_arcs_no_dup n && init_closed n
   && guard_scoped n && in_arc_scoped n && out_arc_scoped n && init_typed n
-  && guard_typed n && in_arc_typed n && out_arc_typed n
+  && guard_typed n && in_arc_typed n && out_arc_typed n && ctors_no_dup n

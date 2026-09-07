@@ -479,7 +479,9 @@ let no b msg = if b then [] else [ msg ]
     This mirrors [Net.valid] conjunct for conjunct. Nothing depends on it: [net_of_string]
     decides [Net.valid] itself, and that decision is what the core receives. *)
 let explain_invalid n =
-  no (places_no_dup n) "two places share a name"
+  no (ctors_no_dup n)
+    "two colors declare a constructor of the same name, which mCRL2 refuses"
+  @ no (places_no_dup n) "two places share a name"
   @ no (trans_no_dup n) "two transitions share a name"
   @ no (vars_no_dup n) "two variables share a name"
   @ no (names_disjoint n) "a place shares its name with a transition or a variable"

@@ -352,6 +352,34 @@ module Nets {
   // when a net is refused, so a rejection can say which condition failed.
   // ---------------------------------------------------------------------------------------
 
+  /** The nullary constructors the emitted specification declares.
+    *
+    * `src/Print.dfy` prints an enumeration as `struct id1 | id2 | ...` and a record with no
+    * fields as `struct R`, so both contribute *constants* to one mCRL2 namespace. Two
+    * constants of the same name are rejected by `mcrl22lps` -- "Double declaration of
+    * constructor constant" -- even in different sorts. A record with fields contributes a
+    * constructor of positive arity, which may share a name with a constant.
+    */
+  function NullaryCtors(cs: seq<Color>): seq<string>
+  {
+    if |cs| == 0 then []
+    else
+      (match cs[0]
+         case CEnum(_, ids) => ids
+         case CRecord(nm, CFNil) => [nm]
+         case _ => [])
+      + NullaryCtors(cs[1..])
+  }
+
+  /** The nullary constructors of `Sigma` are distinct.
+    *
+    * Not one of the seven checks of `InputFormat.md` 4.3, and not a requirement of
+    * Definition 5: colour sets are sets, and two of them may both contain an element spelled
+    * `a`. It is a constraint the target imposes, like `Target.md` 1's reserved keywords.
+    * See `Tests/docs/Findings.md` 8.
+    */
+  predicate CtorsNoDup(n: Net) { NoDup(NullaryCtors(n.colors)) }
+
   /** The places have distinct names: `P` is a set. */
   predicate PlacesNoDup(n: Net) { NoDup(PlaceNames(n.places)) }
 
@@ -480,6 +508,7 @@ module Nets {
     && InArcsNoDup(n) && OutArcsNoDup(n)
     && InitClosed(n) && GuardScoped(n) && InArcScoped(n) && OutArcScoped(n)
     && InitTyped(n) && GuardTyped(n) && InArcTyped(n) && OutArcTyped(n)
+    && CtorsNoDup(n)
   }
 
   // ---------------------------------------------------------------------------------------

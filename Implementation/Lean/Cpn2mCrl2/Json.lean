@@ -322,7 +322,9 @@ nothing depends on it: `Net.ofJsonString` decides `Net.Valid` itself, and that d
 what the core receives. -/
 def Net.explainInvalid (N : Net) : List String :=
   let no := fun (b : Bool) (m : String) => if b then [] else [m]
-  no (decide (ListUtil.NoDup N.placeNames)) "two places share a name"
+  no (decide (ListUtil.NoDup N.nullaryCtors))
+      "two colors declare a constructor of the same name, which mCRL2 refuses"
+  ++ no (decide (ListUtil.NoDup N.placeNames)) "two places share a name"
   ++ no (decide (ListUtil.NoDup N.transNames)) "two transitions share a name"
   ++ no (decide (ListUtil.NoDup N.varNames)) "two variables share a name"
   ++ no (decide (∀ n ∈ N.placeNames, n ∉ N.transNames ∧ n ∉ N.varNames))

@@ -1,25 +1,20 @@
 {
   "_comment": [
-    "A NET THAT DOES NOT WORK, kept because it does not work. See Findings.md 8.",
+    "Two enumerations that share a constructor name. Findings.md 8.",
     "",
-    "Two enumerations that share a constructor name. Definition 5 places no constraint",
-    "on this -- colour sets are sets, and nothing says two of them may not both contain",
-    "an element called a -- and InputFormat.md 4.3 does not check it. But the emitted",
-    "text declares",
+    "Definition 5 places no constraint on this -- colour sets are sets, and nothing says two",
+    "of them may not both contain an element called a -- and none of the seven T1 checks of",
+    "InputFormat.md 4.3 covers it. But the emitted text would declare",
     "",
     "    sort C2 = struct a | b;",
     "    sort C3 = struct a | c;",
     "",
     "and mcrl22lps refuses it: Double declaration of constructor constant a.",
     "",
-    "All three translators emit exactly this, byte for byte, so leg A is blind to it;",
-    "no fixture in the repository declares two enumerations, so nothing else covers it.",
-    "It was found by scripts/fuzz.py, at seven of the first thirty seeds.",
-    "",
-    "It is NOT in corpus/expected.tsv, because it fails and the fix is a decision about",
-    "the project rather than about this directory: either T1 gains a check that",
-    "constructor names are globally unique, or the printer qualifies them per sort.",
-    "Both change all three translators."
+    "Found by scripts/fuzz.py, at seven of the first thirty seeds, when all three translators",
+    "accepted it and emitted the same broken text byte for byte. All three now refuse it, at",
+    "T1, as an eighth check that the target imposes rather than Definition 5 -- the same",
+    "footing as Target.md 1's reserved keywords."
   ],
   "colors": {
     "C2": {

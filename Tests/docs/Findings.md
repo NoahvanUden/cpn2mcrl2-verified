@@ -219,10 +219,37 @@ not equivalent:
    the T2 proofs about the printer move with it.
 
 Both change all three translators, and [`CLAUDE.md`](../../CLAUDE.md)'s rule is not to fill a
-gap like this by assumption. The minimal reproducer is kept as
-`corpus/known-failing/shared-ctor.cpn.json`, deliberately outside `expected.tsv` so that the
-harness stays green on what it does cover, and the generator gives its two enumerations
-disjoint constructors so that this one defect does not drown out the rest of the search.
+gap like this by assumption, so it was put to the author.
+
+**Resolved: option 1.** All three translators now refuse such a net at T1, with the same
+message, and the check is recorded as an **eighth** check in
+[`InputFormat.md`](../../Implementation/docs/InputFormat.md) §4.3 — marked as an addition to the
+thesis, because Definition 5 does not ask for it and the target does. The precise rule was
+measured rather than guessed:
+
+| Collision | `mcrl22lps` |
+| --- | --- |
+| two enumeration constants | **rejected** |
+| a field-less record's constructor against an enumeration constant | **rejected** |
+| a record constructor of positive arity against a constant | accepted |
+| two records sharing a field name | accepted |
+| a field name equal to a constant | accepted |
+
+So the check is on *nullary* constructors only: every enumeration constant, plus the sort name
+of any record with no fields. `Net.nullaryCtors` in Lean, `NullaryCtors` in Dafny,
+`nullary_ctors` in OCaml.
+
+The net moved from `corpus/known-failing/` — a directory that no longer exists — to
+`corpus/rejected/shared-ctor.cpn.json`, where leg D now asserts that all three refuse it. The
+generator keeps its disjoint constructors, so the search still explores past this shape rather
+than rediscovering it at a quarter of all seeds.
+
+**One gap in the fix, stated rather than hidden.** Z3 is not installed on this machine, so the
+Dafny sources were compiled with `--no-verify` and *not re-verified*. The change is additive —
+a new conjunct in `Valid`, which only strengthens the hypothesis every downstream proof already
+assumes, and `NullaryCtors` is a structurally recursive function on a sequence — so nothing
+about the existing proofs should move. "Should" is doing real work in that sentence, and
+`dafny verify --standard-libraries src/*.dfy` is the thing that would replace it.
 
 ---
 

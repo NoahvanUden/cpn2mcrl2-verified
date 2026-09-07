@@ -199,6 +199,20 @@ theorem mem_Var_of_post {t : TransDecl} {a : ArcDecl} (ha : a ∈ N.post t.name)
     {p : String × ExprTy} (h : p ∈ a.expr.freeVars) : p ∈ N.Var t :=
   ListUtil.mem_dedup.2 <| List.mem_append_right _ <| List.mem_flatMap.2 ⟨a, ha, h⟩
 
+/-- The nullary constructors the emitted specification declares.
+
+`Cpn2mCrl2/Print.lean` prints an enumeration as `struct id1 | id2 | ...` and a record with no
+fields as `struct R`, so both contribute *constants* to one mCRL2 namespace. Two constants of
+the same name are rejected by `mcrl22lps` -- "Double declaration of constructor constant" --
+even when they belong to different sorts. A record with fields contributes a constructor of
+positive arity, which may share a name with a constant, so it does not appear here. -/
+def nullaryCtors (N : Net) : List String :=
+  N.colors.flatMap fun c =>
+    match c with
+    | .enum _ ids => ids
+    | .record n .nil => [n]
+    | _ => []
+
 /-! ### Validity
 
 The T1 checks of `Implementation/docs/InputFormat.md` §4.3, plus what
@@ -255,6 +269,14 @@ structure Valid : Prop where
   inArcScoped : ∀ a ∈ N.inArcs, Expr.ScopedIn N.vars a.expr
   /-- `Var(t) ⊆ V` for the out-arc expressions. -/
   outArcScoped : ∀ a ∈ N.outArcs, Expr.ScopedIn N.vars a.expr
+  /-- The nullary constructors of `Σ` are distinct.
+
+  Not one of the seven checks of `InputFormat.md` §4.3, and not a requirement of Definition 5:
+  colour sets are sets, and two of them may perfectly well both contain an element spelled `a`.
+  It is a constraint the *target* imposes, in the same way as `Target.md` §1's reserved
+  keywords, and without it the emitted text is refused by `mcrl22lps`. See
+  `Tests/docs/Findings.md` §8. -/
+  ctorsNodup : ListUtil.NoDup N.nullaryCtors
 
 instance : DecidablePred Net.Valid := fun N =>
   decidable_of_iff
@@ -272,17 +294,19 @@ instance : DecidablePred Net.Valid := fun N =>
       (∀ d ∈ N.places, d.init.freeVars = []) ∧
       (∀ t ∈ N.transitions, Expr.ScopedIn N.vars t.guard) ∧
       (∀ a ∈ N.inArcs, Expr.ScopedIn N.vars a.expr) ∧
-      (∀ a ∈ N.outArcs, Expr.ScopedIn N.vars a.expr))
+      (∀ a ∈ N.outArcs, Expr.ScopedIn N.vars a.expr) ∧
+      ListUtil.NoDup N.nullaryCtors)
     ⟨fun h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1, h.2.2.2.2.2.2.1,
         h.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.1,
         h.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.2.1,
         h.2.2.2.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1,
         h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1,
-        h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2⟩,
+        h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1, h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1,
+        h.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2⟩,
       fun h => ⟨h.placesNodup, h.transNodup, h.varsNodup, h.namesDisjoint, h.transVarsDisjoint,
         h.boolMem, h.colorMem, h.varsAreColors, h.varTypeMem, h.inArcPlace, h.outArcPlace,
         h.inArcTrans, h.outArcTrans, h.inArcsNodup, h.outArcsNodup, h.initClosed,
-        h.guardScoped, h.inArcScoped, h.outArcScoped⟩⟩
+        h.guardScoped, h.inArcScoped, h.outArcScoped, h.ctorsNodup⟩⟩
 
 /-! ### Consequences of validity used by the translation -/
 
