@@ -3,10 +3,9 @@
 What building the harness found. Recorded as they were found, before being fixed, per
 [`Plan.md`](Plan.md) §9.
 
-The first two are the ones that matter: **both are in the checks this repository already had,
-and both were found by asking whether the new harness could be made to go red rather than by
-running it.** A test that cannot fail is worth exactly nothing, and two of the repository's
-existing checks could not fail.
+The ones that matter are 1, 4 and 11, and they are one mistake three times over: **a check
+whose success is the absence of something.** All three were found by asking whether a check
+could be made to go red, not by running it. A test that cannot fail is worth exactly nothing.
 
 ---
 
@@ -332,3 +331,72 @@ little of the Model Checking Contest corpus falls inside the expression language
 outcome is to report that number and stop, which is a finding about the language rather than a
 failure of the plan." The subset that fits is empty, so the fallback — "run on the subset that
 fits, and report the size of the subset alongside every result" — reports zero and runs nothing.
+
+---
+
+## 11. A translator that cannot run is indistinguishable from one that refuses
+
+**Severity: high. A false pass, and the same shape as finding 1.**
+
+Run the harness from WSL rather than from Git Bash and it reports this:
+
+```
+== one-step (tier1) ==
+  translate          lean emitted nothing
+  translate          dafny emitted nothing
+...
+== badcolor (must be rejected) ==
+  leg D              refused by lean,dafny,ocaml
+```
+
+The second block is a lie. Nothing refused anything: the Lean and Dafny binaries are
+Windows `.exe` files, WSL's binfmt interop launches them happily, and they are then
+handed a `/mnt/c/...` path that a Windows program cannot open. They fail at their first
+read and write no output file.
+
+**"The output file was not written" is the criterion leg D uses**, and finding 4 is why:
+the three translators disagree about exit status, so the file is the only signal all
+three share. But a translator that never ran writes no file either, so leg D reported
+all twelve nets of `corpus/rejected/` as correctly refused while not one translator had
+successfully processed anything. **Every check that can only go red was red, and the one
+check that reports success by absence went green.**
+
+**Fixed twice over, because either fix alone leaves a hole.**
+
+1. **A refusal must be said, not inferred.** Leg D now reads the diagnostic and fails
+   with `NO TRANSLATOR SAID WHY` if nothing is printed. A missing output file plus a
+   silent translator is no longer evidence of anything.
+2. **The calling convention is probed, not assumed.** Every translator is asked to
+   translate `corpus/tier1/one-step.cpn.json` — a net that must translate — in each
+   convention (`native`, a Windows `.exe` from WSL with arguments through `wslpath -w`,
+   an ELF from Git Bash through `wsl.exe`), and the first that produces a non-empty file
+   is the one used. A translator that produces nothing in any convention takes part in
+   no leg, and the summary names which translators actually ran. If none runs, the
+   harness exits 2 before testing anything rather than reporting a green corpus.
+
+This also makes the harness work in both shells, which it previously did not: WSL now
+drives the two Windows translators through `wslpath`, and Git Bash still drives the
+Linux OCaml binary through `wsl.exe`.
+
+**The same trap, one layer down.** `oracle/run.py` exits 2 for "this net is outside what
+the adapter can express" — and a Python that cannot open `run.py` at all also exits 2. A
+broken oracle invocation was therefore reported as `cannot express this net -- recorded,
+not a failure`, which reads like a considered gap. The oracle's interpreter is now
+probed the same way, and when it does not run the summary says so in as many words:
+`THE ORACLE DID NOT RUN, so legs B and B2 checked nothing. Everything above is this
+repository agreeing with itself.`
+
+**One real portability bug found on the way.** `lpsinfo` does not word its summand count
+the same way in every release. 202307 prints one `Number of summands`; 202607 splits it
+into `Number of action summands` and `Number of deadlock/delta summands`. The shape
+check read only the old wording, so on the newer toolset it compared `4` against the
+empty string and failed on every net. It now reads both, sums the split form, and treats
+an unparseable count as a failure with the `lpsinfo` output attached — an empty count is
+not a small number, it is no answer.
+
+**What this says about the other checks.** Findings 1, 4 and this one are the same
+mistake three times: a check whose success is the *absence* of something. `ltscompare`
+succeeded by not printing a failure it never signalled through its exit status; leg D
+succeeded by not finding a file. Any check of that shape has to be tested by making it
+go red, and the probe is exactly that test, run on every invocation rather than once by
+hand.

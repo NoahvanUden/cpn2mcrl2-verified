@@ -53,6 +53,14 @@ reading:
 2. **`expected.tsv` is checked out with CRLF**, so the shape check compared `3` with `3\r` and
    failed on every fixture in the Lean and Dafny harnesses.
 
+**A third check that could not fail, found by running the harness from WSL instead of Git
+Bash:** the Lean and Dafny binaries are Windows `.exe`, WSL launches them and hands them paths
+they cannot open, and they write nothing — which is exactly how leg D recognises a correct
+refusal. All twelve rejected nets were reported as `refused by lean,dafny,ocaml` while not one
+translator had processed anything. Leg D now demands a diagnostic, and every translator is
+probed on a net that must translate before its verdicts are believed.
+[`docs/Findings.md`](docs/Findings.md) §11.
+
 One genuine defect, found by the random search: **two enumerations that share a constructor name
 emit text `mcrl22lps` refuses**, in all three translators, and nothing in Definition 5 or in the
 seven T1 checks forbade the net. The author chose to narrow the input, so all three now refuse it
@@ -78,6 +86,28 @@ python Tests/scripts/fuzz.py --runs=50      # random nets, shrunk on failure
 python Tests/scripts/mcc.py <dir> --survey  # how much of a PNML corpus fits, and why not
 ```
 
+`check.sh` runs from Git Bash and from WSL alike. It has to work out how to call each
+translator, because they are not all native to the same shell — the Lean and Dafny binaries
+are Windows `.exe` and the OCaml one is ELF — so it probes each of them on a net that must
+translate before believing any verdict, and the summary names which ones actually ran. A
+translator it cannot run takes part in no leg; if none runs it exits 2 rather than reporting
+a green corpus. See [`docs/Findings.md`](docs/Findings.md) §11 for why that is not
+over-engineering.
+
 The oracle lives in `Tests/.venv` (`pip install snakes`), so nothing outside this directory
-depends on Python. The OCaml translator is a Linux binary here and is run through `wsl.exe`;
-when neither works the harness reports leg A as comparing two translators rather than failing.
+depends on Python. Set `MCRL2_BIN` if mCRL2 is not in a standard place, and `PYTHON` to point
+at a different interpreter.
+
+## Making sure it can fail
+
+A check that cannot go red is worth nothing, and three of the ones here could not — see
+§1, §4 and §11 of [`docs/Findings.md`](docs/Findings.md). The cheapest way to confirm the
+harness is live is to break something and watch it complain:
+
+- change a number in `corpus/expected.tsv` — the `by hand` line must go red for that net;
+- make `oracle/adapters/snakes_adapter.py` ignore guards — legs B and B2 must go red, and
+  name the markings they disagree about;
+- point one of the `BIN_*` variables at a nonexistent file — that translator must drop out
+  of the summary's "translators used", and out of leg D's refusers.
+
+If a mutation you expect to break something leaves the run green, that is a finding.

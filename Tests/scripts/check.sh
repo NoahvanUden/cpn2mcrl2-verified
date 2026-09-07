@@ -43,22 +43,112 @@ VENV="$here/.venv/Scripts/python.exe"
 [ -x "$VENV" ] || VENV="$here/.venv/bin/python"
 ORACLE_PY="${PYTHON:-$VENV}"
 [ -x "$ORACLE_PY" ] || ORACLE_PY="$(command -v python || true)"
-PY="$(command -v python || true)"
 
-LEAN="$root/Implementation/Lean/.lake/build/bin/cpn2mcrl2.exe"
-[ -x "$LEAN" ] || LEAN="$root/Implementation/Lean/.lake/build/bin/cpn2mcrl2"
-DAFNY="$root/Implementation/Dafny/cpn2mcrl2.exe"
-OCAML="$root/Implementation/OCaml/_build/default/bin/main.exe"
+BIN_lean="$root/Implementation/Lean/.lake/build/bin/cpn2mcrl2.exe"
+[ -x "$BIN_lean" ] || BIN_lean="$root/Implementation/Lean/.lake/build/bin/cpn2mcrl2"
+BIN_dafny="$root/Implementation/Dafny/cpn2mcrl2.exe"
+BIN_ocaml="$root/Implementation/OCaml/_build/default/bin/main.exe"
 
-# The OCaml translator is a Linux binary here, so it is run through WSL when it is not
-# directly executable, and reported as absent when neither works. Plan.md 8 rates a
-# missing toolchain as a reported gap, not a red build.
-ocaml_mode="none"
-if [ -x "$OCAML" ] && "$OCAML" --help >/dev/null 2>&1; then
-  ocaml_mode="native"
-elif command -v wsl.exe >/dev/null 2>&1 &&
-     wsl.exe -e bash -c "test -x '$(echo "$OCAML" | sed 's|^/c/|/mnt/c/|')'" 2>/dev/null; then
-  ocaml_mode="wsl"
+# The three translators are not all native to the shell running this. On Windows the
+# Lean and Dafny binaries are .exe and the OCaml one is ELF; under WSL it is the other
+# way round. Worse, a Windows .exe launched from WSL *runs* -- binfmt interop -- and is
+# then handed a /mnt/c path it cannot open, so it fails at its first read and writes
+# nothing. To a caller that only looks for the output file, that is indistinguishable
+# from a translator correctly refusing a net. See Findings.md 11.
+#
+# So the calling convention is probed rather than assumed: each translator is asked to
+# translate a net that must translate, in each convention, and the one that produces a
+# non-empty file is the one used. A translator that produces nothing in any convention
+# is unusable and takes part in no leg -- including leg D, where counting it as a
+# refuser is a false pass.
+#
+#   native  run it directly, with the paths this shell uses
+#   winexe  a Windows .exe called from WSL: arguments through `wslpath -w`
+#   wsl     an ELF called from Git Bash: through wsl.exe, /c/... -> /mnt/c/...
+probe_net="$here/corpus/tier1/one-step.cpn.json"
+
+to_win() { wslpath -w "$1" 2>/dev/null || echo "$1"; }
+to_wsl() { echo "$1" | sed 's|^/c/|/mnt/c/|'; }
+
+run_as() {  # mode bin arg...   -- an argument beginning with / is a path
+  local mode="$1" bin="$2"; shift 2
+  case "$mode" in
+    native) "$bin" "$@" ;;
+    winexe)
+      local a=() x
+      for x in "$@"; do case "$x" in /*) a+=("$(to_win "$x")") ;; *) a+=("$x") ;; esac; done
+      "$bin" "${a[@]}" ;;
+    wsl)
+      local q="" x
+      for x in "$@"; do case "$x" in /*) q="$q '$(to_wsl "$x")'" ;; *) q="$q '$x'" ;; esac; done
+      wsl.exe -e bash -c "'$(to_wsl "$bin")'$q" ;;
+    *) return 99 ;;
+  esac
+}
+
+detect_mode() {  # name bin  ->  native | winexe | wsl | none
+  local t="$1" bin="$2" m
+  for m in native winexe wsl; do
+    case "$m" in
+      native) [ -x "$bin" ] || continue ;;
+      winexe) command -v wslpath >/dev/null 2>&1 || continue ;;
+      wsl)    command -v wsl.exe >/dev/null 2>&1 || continue ;;
+    esac
+    rm -f "$out/probe.$t.mcrl2"
+    run_as "$m" "$bin" "$probe_net" "$out/probe.$t.mcrl2" >/dev/null 2>&1
+    if [ -s "$out/probe.$t.mcrl2" ]; then echo "$m"; return; fi
+  done
+  echo none
+}
+
+detect_oracle() {  # -> native | winexe | none
+  local m
+  for m in native winexe; do
+    [ "$m" = winexe ] && { command -v wslpath >/dev/null 2>&1 || continue; }
+    rm -f "$out/probe.oracle.aut"
+    run_as "$m" "$ORACLE_PY" "$here/oracle/run.py" "$probe_net" "$out/probe" \
+      >/dev/null 2>&1
+    if [ -s "$out/probe.oracle.aut" ]; then echo "$m"; return; fi
+  done
+  echo none
+}
+
+py_run() {  # the oracle's interpreter, in whichever convention works
+  run_as "$ORACLE_MODE" "$ORACLE_PY" "$@"
+}
+
+if [ ! -f "$probe_net" ]; then
+  echo "the probe net $probe_net is missing; nothing below would be checked." >&2
+  exit 2
+fi
+MODE_lean="$(detect_mode lean "$BIN_lean")"
+MODE_dafny="$(detect_mode dafny "$BIN_dafny")"
+MODE_ocaml="$(detect_mode ocaml "$BIN_ocaml")"
+usable=""
+for t in lean dafny ocaml; do
+  eval "m=\$MODE_$t"
+  [ "$m" = none ] || usable="$usable $t"
+done
+if [ -z "$usable" ]; then
+  echo "none of the three translators could translate $probe_net:" >&2
+  echo "  lean  $BIN_lean" >&2
+  echo "  dafny $BIN_dafny" >&2
+  echo "  ocaml $BIN_ocaml" >&2
+  echo "Build them, or run this from the shell they were built for. A translator that" >&2
+  echo "cannot run refuses every net, so nothing below would be a test of anything." >&2
+  exit 2
+fi
+
+# The oracle's interpreter needs the same care, and for a sharper reason: run.py exits
+# 2 for "this net is outside what the adapter can express", and a Python that cannot
+# open run.py at all exits 2 as well. Left alone, a broken invocation is reported as a
+# net the oracle cannot express -- a gap that reads like a considered one. So the
+# interpreter is probed on the same net, and leg B is either run or declared absent.
+ORACLE_MODE="$(detect_oracle)"
+if [ "$ORACLE_MODE" = none ]; then
+  oracle_ok=0
+else
+  oracle_ok=1
 fi
 
 # Success is "the output file was written", not "the exit code was zero". The three
@@ -68,36 +158,20 @@ fi
 # having accepted every net in corpus/rejected/.
 translate() {  # translator flags in out   (out is the last argument)
   local t="$1"; shift
-  local out_file="${@: -1}"
+  local out_file="${@: -1}" mode bin
+  eval "mode=\$MODE_$t"; eval "bin=\$BIN_$t"
+  [ "$mode" = none ] && return 99
   rm -f "$out_file"
-  case "$t" in
-    lean)  "$LEAN"  "$@" >/dev/null 2>&1 ;;
-    dafny) "$DAFNY" "$@" >/dev/null 2>&1 ;;
-    ocaml)
-      case "$ocaml_mode" in
-        native) "$OCAML" "$@" >/dev/null 2>&1 ;;
-        wsl)
-          local args=""
-          for a in "$@"; do args="$args '$(echo "$a" | sed 's|^/c/|/mnt/c/|')'"; done
-          wsl.exe -e bash -c "'$(echo "$OCAML" | sed 's|^/c/|/mnt/c/|')'$args"             >/dev/null 2>&1 ;;
-        *) return 99 ;;
-      esac ;;
-  esac
+  run_as "$mode" "$bin" "$@" >/dev/null 2>&1
   [ -f "$out_file" ]
 }
 
 # The message a translator prints when it refuses, for the leg D report.
 refusal() {  # translator net
-  case "$1" in
-    lean)  "$LEAN"  "$2" 2>&1 >/dev/null ;;
-    dafny) "$DAFNY" "$2" 2>&1 >/dev/null ;;
-    ocaml)
-      case "$ocaml_mode" in
-        native) "$OCAML" "$2" 2>&1 >/dev/null ;;
-        wsl) wsl.exe -e bash -c                "'$(echo "$OCAML" | sed 's|^/c/|/mnt/c/|')' '$(echo "$2" | sed 's|^/c/|/mnt/c/|')'"                2>&1 >/dev/null ;;
-        *) return 99 ;;
-      esac ;;
-  esac
+  local mode bin
+  eval "mode=\$MODE_$1"; eval "bin=\$BIN_$1"
+  [ "$mode" = none ] && return 99
+  run_as "$mode" "$bin" "$2" 2>&1 >/dev/null
 }
 
 # --------------------------------------------------------------------- reporting
@@ -115,6 +189,22 @@ edges_of()  { head -1 "$1" | tr -d ' \r' | sed 's/^des(\([0-9]*\),\([0-9]*\),.*/
 # can be made to go red; see Tests/docs/Findings.md 1.
 bisim() {
   [ "$("$MCRL2_BIN/ltscompare" -ebisim "$1" "$2" 2>/dev/null | tail -1)" = "true" ]
+}
+
+# lpsinfo does not word its summand count the same way in every release: 202307 prints
+# one "Number of summands", 202607 splits it into action summands and deadlock/delta
+# summands. Target.md 2 asks about the total, which is their sum. Reading only the old
+# wording gives an empty count, and an empty count is not a small number -- it is no
+# answer, which is why the caller treats it as a failure rather than a mismatch.
+summands_of() {
+  local info="$1" n a d
+  n="$(printf '%s\n' "$info" | sed -n 's/^Number of summands *: *\([0-9]*\).*/\1/p')"
+  if [ -z "$n" ]; then
+    a="$(printf '%s\n' "$info" | sed -n 's/^Number of action summands *: *\([0-9]*\).*/\1/p')"
+    d="$(printf '%s\n' "$info" | sed -n 's/^Number of deadlock.delta summands *: *\([0-9]*\).*/\1/p')"
+    [ -n "$a" ] && n=$(( a + ${d:-0} ))
+  fi
+  echo "$n"
 }
 
 # ------------------------------------------------------------------- the corpus
@@ -184,10 +274,14 @@ while read -r tier name summands params want_states want_edges <&3; do
     # use, because those simplifications preserve behaviour and make exploration
     # cheaper.
     "$MCRL2_BIN/mcrl22lps" -q --no-constelm --no-rewrite "$out/$name$sfx.mcrl2"       "$out/$name$sfx.shape.lps" 2>/dev/null
-    info="$("$MCRL2_BIN/lpsinfo" "$out/$name$sfx.shape.lps" 2>/dev/null)"
-    got_s="$(printf '%s\n' "$info" | sed -n 's/.*Number of summands *: *\([0-9]*\).*/\1/p')"
+    info="$("$MCRL2_BIN/lpsinfo" "$out/$name$sfx.shape.lps" 2>/dev/null | tr -d '\r')"
+    got_s="$(summands_of "$info")"
     got_p="$(printf '%s\n' "$info" | sed -n 's/.*Number of process parameters *: *\([0-9]*\).*/\1/p')"
-    if [ "$got_s" = "$summands" ] && [ "$got_p" = "$params" ]; then
+    if [ -z "$got_s" ] || [ -z "$got_p" ]; then
+      report "shape$sfx" "LPSINFO SAID NEITHER A SUMMAND NOR A PARAMETER COUNT"
+      printf '%s\n' "$info" | head -6 | sed 's/^/    /'
+      fail=1
+    elif [ "$got_s" = "$summands" ] && [ "$got_p" = "$params" ]; then
       report "shape$sfx" "$got_s summands, $got_p parameters"
     else
       report "shape$sfx" "expected $summands summands and $params parameters, got $got_s and $got_p"
@@ -218,7 +312,11 @@ while read -r tier name summands params want_states want_edges <&3; do
   fi
 
   # -- the oracle -------------------------------------------------------------
-  "$ORACLE_PY" "$here/oracle/run.py" "$net" "$out/$name" >/dev/null 2>"$out/$name.oracle.err"
+  if [ "$oracle_ok" = 0 ]; then
+    report "oracle" "unavailable -- legs B and B2 not run for this net"
+    uncompared=$((uncompared+1)); continue
+  fi
+  py_run "$here/oracle/run.py" "$net" "$out/$name" >/dev/null 2>"$out/$name.oracle.err"
   orc=$?
   case "$orc" in
     2) report "oracle" "cannot express this net -- recorded, not a failure"
@@ -255,7 +353,7 @@ while read -r tier name summands params want_states want_edges <&3; do
 
   # -- leg B2, bag encoding only ----------------------------------------------
   if [ -f "$out/$name.fsm" ]; then
-    if msg="$("$PY" "$here/scripts/markings.py" "$out/$name.fsm" \
+    if msg="$(py_run "$here/scripts/markings.py" "$out/$name.fsm" \
                 "$out/$name.oracle.markings" "$out/$name.oracle.aut" 2>&1)"; then
       report "leg B2" "$(echo "$msg" | tail -1)"
     else
@@ -289,8 +387,20 @@ if [ -z "$only" ]; then
       fi
     done
     if [ "$allrejected" = 1 ]; then
-      report "leg D" "refused by $(echo $refusers | tr ' ' ',')"
-      refusal lean "$bad" | head -1 | sed 's/^/    /'
+      # A refusal has to be *said*, not merely inferred from a missing output file: a
+      # translator that cannot run writes nothing either. Findings.md 11.
+      why=""
+      for t in $refusers; do
+        why="$(refusal "$t" "$bad" | head -1)"
+        [ -n "$why" ] && break
+      done
+      if [ -z "$why" ]; then
+        report "leg D" "NO TRANSLATOR SAID WHY ($(echo $refusers | tr ' ' ','))"
+        fail=1
+      else
+        report "leg D" "refused by $(echo $refusers | tr ' ' ',')"
+        printf '    %s\n' "$why"
+      fi
     fi
   done
 fi
@@ -298,7 +408,16 @@ fi
 # ------------------------------------------------------------------- summary
 
 echo
-[ "$ocaml_mode" = "none" ] && echo "note: the OCaml translator was not runnable; leg A compared two translators"
+for t in lean dafny ocaml; do
+  eval "m=\$MODE_$t"
+  [ "$m" = none ] && echo "note: the $t translator was not runnable; it took part in no leg"
+done
+echo "note: translators used: $(echo $usable | tr ' ' ','), of lean,dafny,ocaml"
+if [ "$oracle_ok" = 0 ]; then
+  echo "note: THE ORACLE DID NOT RUN ($ORACLE_PY), so legs B and B2 checked nothing."
+  echo "      Everything above is this repository agreeing with itself. Install the"
+  echo "      oracle for the shell you are in: python -m venv Tests/.venv && pip install snakes"
+fi
 [ "$unsupported" -gt 0 ] && echo "note: $unsupported net(s) the oracle cannot express -- see Oracle.md 2.4"
 [ "$uncompared" -gt 0 ] && echo "note: $uncompared net(s) over the state cap, with no verdict"
 if [ "$fail" -eq 0 ]; then echo "all green"; else echo "FAILURES"; fi
