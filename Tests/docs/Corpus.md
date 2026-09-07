@@ -156,20 +156,21 @@ standard tool is from Definition 5 — worth recording under
 ```
 Tests/
   corpus/
-    tier1/        one-step.cpn.json  (+ .pnml once E0 lands), ...
-    tier2/
-    tier3/        or symlinks to Implementation/*/fixtures
-    rejected/
-    expected.tsv  per section 2.1
-  oracle/         per Oracle.md section 5
-  scripts/        check.sh -- legs A to D
-  out/            generated; gitignored
+    tier1/         thirteen nets, per section 2
+    tier2/         five nets, per section 3
+    rejected/      twelve nets, per section 5
+    expected.tsv   per section 2.1 -- tier-3 rows point at Implementation/*/fixtures
+    fuzz/          nets the random search found and shrunk; committed as regressions
+  oracle/          per Oracle.md section 5
+  scripts/         check.sh (legs A-D), fuzz.py, mcc.py, markings.py, toolchain.py
+  out/             generated; gitignored
 ```
 
-The corpus is committed in one place and read by all three translators, rather than copied into
-each of `Implementation/*/fixtures/` as the current fixtures are. Those stay where they are: they
-are each translator's own smoke test, and they should keep working without this directory being
-present.
+Tier 3 is not copied here: `counter`, `jobs` and `multitoken` stay in
+`Implementation/*/fixtures/`, which is each translator's own smoke test and should keep working
+without this directory present, and `expected.tsv` reads its tier-3 rows from there directly.
+PNML never joined this corpus — [`Findings.md`](Findings.md) §6 is why — so the round trip lives
+entirely in [`Implementation/tools/roundtrip/`](../../Implementation/tools/roundtrip).
 
 ---
 

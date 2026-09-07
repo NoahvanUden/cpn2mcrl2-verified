@@ -165,14 +165,13 @@ together with 4.
 **How that turned out.** Obligation 4 was not the risk, and obligation 1 was not needed at
 all. Three independent developments — [`Implementation/Lean/`](../Lean),
 [`Implementation/Dafny/`](../Dafny) and, for an arbitrary expression language,
-[`Proof/`](../../Proof) — reached the same two conclusions. The tuple sorts of item 1 are only
-ever *bound*, never the sort of a subterm, so a product former is not needed anywhere and the
-ripple item 1 predicts into `varType` and the examples never happens. And item 4 is not a
-proof: in all three, an expression is evaluated under a binding restricted to its own free
-variables, so moving $E(p,t)$ into the summand's context is not a re-indexing of the term and
-the obligation collapses. What made that so is a modelling decision rather than a language
-feature — scoping is extrinsic in all three — which is where [§7](#7-risks)'s severity rating
-was aimed wrongly. Items 2, 3 and 5 behaved as predicted.
+[`Proof/`](../../Proof) — agree: the tuple sorts of item 1 are only ever *bound*, never the sort
+of a subterm, so no product former is needed anywhere; and item 4 is not a re-indexing proof at
+all, because in all three an expression is evaluated under a binding restricted to its own free
+variables, so moving $E(p,t)$ into the summand's context changes nothing about the term. What
+makes that true is a modelling decision — scoping is extrinsic in all three — not a language
+feature, which is where [§7](#7-risks)'s severity rating was aimed wrongly. Items 2, 3 and 5
+behaved as predicted.
 
 ### 4.1 One consequence to accept early
 
@@ -268,44 +267,24 @@ comparison that makes building it three times worthwhile rather than merely repe
 
 ### 6.1 Where the order above did not survive
 
-Three things about that table are worth recording rather than quietly editing.
+**M1 was skipped and is now obsolete.** It was to be a differential oracle for M3 and M4; the
+Lean translator arrived first, and M4 supplied a better oracle than M1 could have been — two
+verified translators, sharing no code, agreeing byte for byte. The one cost is M5, which
+[`Languages.md`](Languages.md) §3 planned as "add contracts to the prototype" and which instead
+started from nothing.
 
-**M1 was skipped, and is now obsolete.** Its purpose was to be a differential oracle for M3
-and M4, and the Lean translator arrived before anything needed one. M4 then supplied a better
-oracle than M1 could have been: two *verified* translators, sharing no code, written against
-these documents rather than against each other, and emitting byte-identical text on every
-fixture. The one thing its absence still costs is M5, which
-[`Languages.md`](Languages.md) §3 planned as "add contracts to the prototype" and which now
-starts from nothing.
+**M2 was scheduled first to de-risk obligation 4, and came last having de-risked nothing** —
+both translators were finished before it, and the obligation cost nothing there either. Its
+value turned out to be independent of that: it closes
+[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §7's item 2 for an *arbitrary*
+expression language rather than the one concrete language a translator fixes, and it was done
+differently than planned — no product former, no new `ExprLang` fields — for the reasons
+[§4](#4-the-proof-obligations-concretely) above gives.
 
-**M2 was not the long pole, and it came last.** It was scheduled first, and scheduled first
-because obligation 4 was to be prototyped there before committing to three implementations —
-the top row of [§7](#7-risks). Both translators were finished before it, so it prototyped
-nothing; and when it was finally done, the obligation it was meant to de-risk cost nothing
-there either. What it does still carry is the value it has on its own: it is item 2 of
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §7's list of gaps worth acting
-on, and it closes that gap for an *arbitrary* expression language rather than for the one
-concrete language a translator fixes.
-
-**M2 was done differently than written.** `ExprTy` did not gain products, and `ExprLang` did
-not gain the Definition 14 operations as fields; the operations became a small inductive syntax
-layered over the assumed language instead. Neither of the two written changes turned out to be
-necessary, and the second turned out to be undesirable.
-[`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §5.2 is the record of why, and
-[§4](#4-the-proof-obligations-concretely) above summarises the finding.
-
-**M5 is done, and what it delivers is a negative result.**
-[`Implementation/OCaml/`](../OCaml) is a third translator that emits text byte-identical to the
-other two on every fixture in both encodings, and nothing about it is proved. Cameleer will not read it: `=` in program code is `int`
-equality, six of the standard-library functions it uses are unknown symbols, `when` guards and
-`include` are unsupported, it verifies one file at a time, and `open` on a module in that file
-is read as a Why3 library import. Rewriting the core into the fragment it does accept cost
-+280/−106 lines and bought no proof — and the rewrite is the measurement, because what it
-removes is exactly the idiom that made OCaml worth trying. The work was stopped there rather
-than carried through the specification layer, on the grounds that finishing would confirm
-obligation 4 free a fourth time and change nothing else. See
-[`Implementation/OCaml/Notes.md`](../OCaml/Notes.md), whose last section records
-what finishing would take.
+**M5 is a negative result**, recorded in full in
+[`Implementation/OCaml/Notes.md`](../OCaml/Notes.md): a third translator, byte-identical output,
+and nothing proved, because Cameleer will not read the fragment of OCaml the translator is
+written in.
 
 ### 6.2 What is left
 

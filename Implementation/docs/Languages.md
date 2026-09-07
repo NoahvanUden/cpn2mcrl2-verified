@@ -158,67 +158,41 @@ free, and which does it make expensive?** Obligations 1 to 3 should separate the
 Obligation 4 probably will not — it is a real induction in all three, and that is worth
 confirming rather than assuming.
 
-### 5.1 The answer, so far
+### 5.1 The answer
 
-Two of the three are built, and the answer they give is mostly negative.
+All three are built, and the answer is mostly negative for the prediction above.
 
-**Obligations 1 to 3 did not separate the tools**, because there was nothing to separate.
-Obligation 1 is not needed by anyone: Definition 13's tuple sorts are only ever bound, so no
-product former is required in Lean, in Dafny, or in [`Proof/`](../../Proof). Obligations 2 and
-3 are about twenty first-order cases, mechanical in both, and SMT had nothing to give away.
+**Obligations 1 to 3 did not separate the tools**, because there was nothing to separate: no
+product former was needed anywhere (Definition 13's tuple sorts are only ever bound), and
+obligations 2 and 3 are mechanical, first-order cases in every language.
 
-**Obligation 4 did not separate them either — and it is not an induction.** The prediction
-above is half right. In all three developments the obligation costs nothing, and the reason is
-not the one this page assumed: an expression is evaluated under a binding restricted to its own
-free variables, so moving it into the summand's context is not a re-indexing. Scoping is
-extrinsic in all three. Had any of them indexed terms by a typing context instead, the cost
-would have been real — in *whichever* language.
+**Obligation 4 did not separate them either, and it is not an induction.** In all three, an
+expression is evaluated under a binding restricted to its own free variables, so moving it into
+the summand's context is not a re-indexing — the obligation collapses regardless of language.
+Scoping is extrinsic in all three; had any of them indexed terms by a typing context instead,
+the cost would have been real.
 
-**Where they did separate is not on [`Plan.md`](Plan.md) §4's list at all.** The T2 file is the
-one file that is smaller in Dafny, 175 lines against Lean's 266, because Z3 needs none of the
-`show` steps Lean needs to force definitional unfolding. Everything else that differs in size
-measures the two standard libraries.
-[`Implementation/Dafny/Notes.md`](../Dafny/Notes.md) has the numbers.
+**Where the tools did separate is not on [`Plan.md`](Plan.md) §4's list at all**: size, and how
+much SMT automation removes. [`Implementation/Dafny/Notes.md`](../Dafny/Notes.md) has the
+numbers.
 
-**What was left for M5 was therefore a different question.** "How much does the automation give
-away" is answered. What OCaml with GOSPEL/Cameleer still tested is C5 in its strongest form:
-whether the verified artifact can also be code somebody would have written anyway, which is the
-one thing neither Lean nor Dafny delivers.
+**M5 tested a different question**, since "how much does automation give away" was already
+answered: whether a verified artifact can also be code somebody would have written anyway.
 
 ### 5.2 The answer M5 gave, which is no
 
-[`Implementation/OCaml/`](../OCaml) is a third translator. It emits text byte-identical to both
-others on every fixture in both encodings, and **nothing about it is proved**, because Cameleer
-cannot read it.
+[`Implementation/OCaml/`](../OCaml) emits text byte-identical to the other two on every fixture,
+and **nothing about it is proved**, because Cameleer cannot read idiomatic OCaml — chiefly,
+`=` in program code is `int` equality only, so every compared type needs a hand-written
+decidable equality, which is exactly what Lean and Dafny give away for free. Rewriting the core
+into the fragment Cameleer accepts cost +280/−106 lines and bought no proof; that rewrite is the
+measurement. Full account, including the smaller obstacles and what finishing would take, in
+[`Implementation/OCaml/Notes.md`](../OCaml/Notes.md).
 
-The obstacles are listed in [`Implementation/OCaml/Notes.md`](../OCaml/Notes.md). Three of
-them decide the question:
-
-- **`=` in program code is `int` equality.** Not strings, not booleans, not user datatypes. So
-  every compared type needs a hand-written decidable equality — which is precisely what Lean
-  derives with `deriving DecidableEq` and Dafny gives away with `(==)` on any datatype. The one
-  thing this table's §2 does not score, and the one that decided it.
-- **Six of the standard-library functions the translator uses are unknown symbols**, so
-  `List.for_all`, `List.concat_map` and `List.find_opt` come back as hand-written recursion.
-- **It verifies one file at a time, and `open` on a module in that file is read as a Why3
-  library import.** The verified part cannot use the module system.
-
-Rewriting the core into the fragment Cameleer does accept cost +280/−106 lines and bought no
-proof at all. That rewrite is the measurement: what it deletes is exactly the idiom that made
-C1 and C5 worth scoring in the first place.
-
-**The scoring in [§2](#2-the-field) was wrong about where the difficulty is.** C4 was named the
-discriminator, on the assumption that obligation 4 would be a real induction everywhere. It is
-free everywhere. What actually separates the three tools is a criterion this page does not
-have: *how much of the language the prover can see.* Lean and Dafny verify the language they
-compile. Cameleer verifies a fragment, and the fragment excludes structural equality — so in
-OCaml, alone of the three, the verified program and the natural program are different programs.
-
-One further data point, from before any of that. **Cameleer is not in the opam repository.** It
-installs from a git pin whose `gospel` commit does not compile against `cmdliner` 2.x, and it
-drags in `why3-ide` and GTK headers for a command-line tool. §3's "research tool still working
-toward a first release" was accurate, and the risk table of
-[`Plan.md`](Plan.md) §7 rated it correctly at Medium.
+**What actually separates the three tools is a criterion this table does not have**: how much of
+the language the prover can see. Lean and Dafny verify the language they compile; Cameleer
+verifies a fragment that excludes structural equality, so in OCaml alone the verified program
+and the natural program are different programs.
 
 ---
 

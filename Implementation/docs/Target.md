@@ -160,18 +160,21 @@ currently closes:
 
 > nothing here connects the Lean to the translation as it is actually implemented
 
-The reachability-graph side can be produced from the Lean itself once M2 makes the CPN semantics
-computable, or from the unverified M1 prototype in the meantime. Either way the harness runs on
-every fixture in CI, alongside the `mcrl22lps` acceptance check of T0 and the summand-count check
-of [§2](#2-definition-14-emitted-faithfully).
+**Built twice, at two levels of independence.** Each translator's own `scripts/check.sh` runs
+this comparison against a golden `A.aut` recorded in the fixtures — `counter.aut` has outside
+provenance (it is Example 5's corrected chain), `jobs.aut` and `multitoken.aut` were derived by
+hand. [`Tests/`](../../Tests/README.md) then supplies the sharper version: `A.aut` comes from an
+external Petri net library that never read this thesis, on a corpus of 21 nets in both
+encodings, across all three translators — a shared misreading of Definition 14 would pass every
+per-translator check and fail there.
 
-### 4.1 The first thing to test with it
+### 4.1 The order problem is where this harness earns its keep
 
 Example 9 never puts more than one token in a place, so its bisimilarity result says nothing
-about the order problem of [`Plan.md`](Plan.md) §5. The first genuinely informative fixture is a
-net that holds several tokens in one place, produced in different orders. If the list encoding
-is going to fail, that is where it fails, and finding out at M1 costs an afternoon where finding
-out at M6 costs a milestone.
+about the order problem of [`Plan.md`](Plan.md) §5. The informative fixture is one that holds
+several tokens in one place, produced in different orders — `multitoken` here and `two-tokens`
+in [`Tests/corpus/tier1/`](../../Tests/corpus/tier1); both give the list encoding one extra
+state, and `ltscompare -ebisim` confirms it does not matter.
 
 ---
 

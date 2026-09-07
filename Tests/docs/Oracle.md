@@ -213,16 +213,15 @@ Falling to option 4 is a partial failure of this plan and should be recorded as 
 ```
 Tests/
   oracle/
-    contract.md        -- pointer to this file; the adapter's own README
+    run.py                       -- picks an adapter, enforces the cap, writes the two files
     adapters/
-      snakes.py        -- candidate 1
-      ...              -- one file per candidate, all satisfying section 2
-    run.py             -- picks an adapter, enforces the cap, writes the two files
+      snakes_adapter.py          -- the only candidate built so far
 ```
 
-`run.py` is the only thing the harness calls, and it is the only file that knows an adapter exists.
-Adding a candidate is a new file in `adapters/` and a line in `run.py`; it touches nothing in
-`Tests/corpus/`, nothing in `Tests/scripts/`, and no document but this one.
+`run.py` is the only thing the harness calls, and it is the only file that knows an adapter
+exists — `ADAPTERS` there is a one-line dictionary from name to module. Adding a candidate is a
+new file in `adapters/` and an entry in that dictionary; it touches nothing in `Tests/corpus/`,
+nothing in `Tests/scripts/`, and no document but this one.
 
 ---
 
