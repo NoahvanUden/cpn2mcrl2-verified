@@ -188,7 +188,7 @@ So the implementation's bags are finitely supported from the start. This is a fu
 from Definition 1 as printed, and it is recorded:
 [`LeanFormalization.md`](../../Thesis/docs/LeanFormalization.md) §4.10 carries it, next to the
 `Prop`-versus-$\textit{Bool}$ choice it is the explanation of, and
-[`Implementation/Lean/README.md`](../Lean/README.md) §3.1 states it at the point where it is
+[`Implementation/Lean/Notes.md`](../Lean/Notes.md) states it at the point where it is
 made. [`Proof/`](../../Proof) does *not* make it — its `Bag` is still Definition 1's total
 function — which is why the condition there stays a proposition even now that it is syntax.
 
@@ -240,7 +240,7 @@ when they give every token the same count, and nothing anywhere asks two list st
 equal, which is exactly why production order does not matter. The prediction in the paragraph
 above is visible in the fixtures: on `multitoken.cpn.json` the bag encoding gives four states
 and the list encoding five, and `ltscompare -ebisim` reports them equal anyway. See
-[`Implementation/Lean/README.md`](../Lean/README.md) §4.5.
+[`Implementation/Lean/Notes.md`](../Lean/Notes.md) §5.
 
 Encouragingly, the two encodings can be compared mechanically: `ltscompare -ebisim` already
 reports them strongly bisimilar on Example 9. See [`Target.md`](Target.md) §4. That is a test
@@ -304,7 +304,7 @@ is read as a Why3 library import. Rewriting the core into the fragment it does a
 removes is exactly the idiom that made OCaml worth trying. The work was stopped there rather
 than carried through the specification layer, on the grounds that finishing would confirm
 obligation 4 free a fourth time and change nothing else. See
-[`Implementation/OCaml/README.md`](../OCaml/README.md) §4 and §6.1, the second of which records
+[`Implementation/OCaml/Notes.md`](../OCaml/Notes.md), whose last section records
 what finishing would take.
 
 ### 6.2 What is left
@@ -315,7 +315,7 @@ into the native format, once rather than three times, because it is outside the 
 `counter` and `multitoken` round-trip to byte-identical output through all three translators.
 `jobs` does not, and that is a finding rather than a defect: standard PNML has no projection on
 a product sort, so the same behaviour has to be written as a tuple pattern, which is a different
-net with a bisimilar LTS. See [`tools/README.md`](../tools/README.md) §3.3.
+net with a bisimilar LTS. See [`tools/README.md`](../tools/README.md).
 
 The measurement §2.3 of [`InputFormat.md`](InputFormat.md) asks for has now been made, by
 `Tests/scripts/mcc.py`, and the answer is **0 of 443 files** over a 30-model sample of the 2024
@@ -334,7 +334,7 @@ Definition 5 does not ask for it and the target does. See
 [`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §8.
 
 **M5's proofs are closed rather than pending**, on the grounds
-[`Implementation/OCaml/README.md`](../OCaml/README.md) §6.1 records. That section also records
+[`Implementation/OCaml/Notes.md`](../OCaml/Notes.md) records. That file also records
 what reopening them would take, so the decision is reversible if Cameleer changes.
 
 **Everything else is done, and the differential test is the thing that keeps it honest.** All

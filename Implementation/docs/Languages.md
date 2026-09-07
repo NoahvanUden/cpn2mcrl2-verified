@@ -178,7 +178,7 @@ would have been real — in *whichever* language.
 one file that is smaller in Dafny, 175 lines against Lean's 266, because Z3 needs none of the
 `show` steps Lean needs to force definitional unfolding. Everything else that differs in size
 measures the two standard libraries.
-[`Implementation/Dafny/README.md`](../Dafny/README.md) §5 has the numbers.
+[`Implementation/Dafny/Notes.md`](../Dafny/Notes.md) has the numbers.
 
 **What was left for M5 was therefore a different question.** "How much does the automation give
 away" is answered. What OCaml with GOSPEL/Cameleer still tested is C5 in its strongest form:
@@ -191,7 +191,7 @@ one thing neither Lean nor Dafny delivers.
 others on every fixture in both encodings, and **nothing about it is proved**, because Cameleer
 cannot read it.
 
-The obstacles are listed in [`Implementation/OCaml/README.md`](../OCaml/README.md) §4. Three of
+The obstacles are listed in [`Implementation/OCaml/Notes.md`](../OCaml/Notes.md). Three of
 them decide the question:
 
 - **`=` in program code is `int` equality.** Not strings, not booleans, not user datatypes. So

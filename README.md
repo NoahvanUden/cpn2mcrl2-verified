@@ -1,31 +1,37 @@
 # Cpn2mCrl2
 
-Reference material for translating **Colored Petri Nets to mCRL2**, drawn from the MSc thesis
-*Model checking for analysis of BPMN models*.
+Translating **Colored Petri Nets to mCRL2**, with the translation proved correct and the
+proof connected to a program that emits real mCRL2 text.
 
-The thesis defines a translation from Colored Petri Nets (the formal semantics of the BPMN
-models used in the Matala project at TNO-ESI/ASML) to mCRL2 Linear Process Equations, and
-proves the two are bisimilar — so a property checked with the mCRL2 model checker holds for
-the mCRL2 specification if and only if it holds for the original BPMN model.
+The material comes from the MSc thesis *Model checking for analysis of BPMN models*, which
+defines a translation from Colored Petri Nets — the formal semantics of the BPMN models used
+in the Matala project at TNO-ESI/ASML — to mCRL2 Linear Process Equations, and proves the two
+bisimilar. A property checked with the mCRL2 model checker therefore holds of the mCRL2
+specification exactly when it holds of the original model.
 
-This repository holds the thesis itself; a set of Markdown notes that extract the formalisms it
-defines into a form that is easier to work from than the PDF; a Lean 4 formalization of those
-definitions, with the soundness theorem proved; three implementations of the translation, two of
-them verified and emitting text identical to the third; and a plan for testing all three against
-a reachability graph computed outside this repository.
+The repository holds five things: the thesis, notes transcribing its definitions, a Lean 4
+formalization with the soundness theorem proved, three implementations of the translation, and
+a test harness that checks them against a reachability graph computed outside this repository.
 
 ## Contents
 
 | Path | What it is |
 | --- | --- |
 | [`Thesis/Thesis.pdf`](Thesis/Thesis.pdf) | The thesis (76 pages) |
-| [`Thesis/docs/`](Thesis/docs) | Per-formalism notes extracted from the thesis |
-| [`Proof/`](Proof) | A Lean 4 / Mathlib formalization of the definitions in the notes |
-| [`Implementation/`](Implementation/README.md) | The translators: what may be proved of one, the input format, the mCRL2 target, the milestones, and what building it three times showed |
-| [`Implementation/Lean/`](Implementation/Lean) | Translator #1, in Lean 4 — CPN file in, mCRL2 text out, in two encodings, each proved bisimilar to the CPN’s reachability graph |
-| [`Implementation/Dafny/`](Implementation/Dafny) | Translator #2 — the same specification again, with the proofs discharged by Z3 instead of by tactics |
-| [`Implementation/OCaml/`](Implementation/OCaml) | Translator #3 — byte-identical output, and nothing about it proved: the measured account of why Cameleer cannot verify it |
-| [`Tests/`](Tests/README.md) | The plan for validating the translators against a reachability graph computed outside this repository: the oracle contract, and the corpus to run it on |
+| [`Thesis/docs/`](Thesis/docs) | The definitions and proofs of the thesis, transcribed into Markdown, one formalism per file |
+| [`Proof/`](Proof/README.md) | A Lean 4 / Mathlib formalization of those definitions, with Theorem 1 — the soundness theorem — proved |
+| [`Implementation/`](Implementation/README.md) | Three translators, and the documents they were all written against |
+| [`Tests/`](Tests/README.md) | Validation against a third-party Petri net tool, so that the translators are not only checked against each other |
+
+The three translators share one specification and one native input format, and emit
+byte-identical text:
+
+| | Language | What is proved of it |
+| --- | --- | --- |
+| [`Implementation/Lean/`](Implementation/Lean/README.md) | Lean 4 | The emitted term denotes Definition 14, and — composed with Theorem 1 — an LTS bisimilar to the net's reachability graph |
+| [`Implementation/Dafny/`](Implementation/Dafny/README.md) | Dafny | The same term-level statement, discharged by Z3 instead of by tactics |
+| [`Implementation/OCaml/`](Implementation/OCaml/README.md) | OCaml | Nothing. Why not is the result that milestone delivers |
+| [`Implementation/tools/`](Implementation/tools/README.md) | Python | A PNML importer, deliberately outside the trust boundary |
 
 ### The notes
 
@@ -33,30 +39,37 @@ a reachability graph computed outside this repository.
 | --- | --- | --- |
 | [`CommonDefinitions.md`](Thesis/docs/CommonDefinitions.md) | Bags, expressions, bindings and evaluation (Definitions 1–2) | Chapter 2 |
 | [`LabeledTransitionSystems.md`](Thesis/docs/LabeledTransitionSystems.md) | Labeled Transition Systems (Definition 3) | Chapter 2 |
-| [`ColoredPetriNets.md`](Thesis/docs/ColoredPetriNets.md) | Petri Nets and Colored Petri Nets — syntax, semantics, reachability graph (Definitions 4–9) | Chapter 3 |
-| [`mCRL2.md`](Thesis/docs/mCRL2.md) | Linear Process Equations, the CPN→LPE translation, LPE semantics, the modal μ-calculus, tooling (Definitions 13–15, 18) | Chapters 5–6 |
-| [`Bisimiliarity.md`](Thesis/docs/Bisimiliarity.md) | Bisimulation, the relation between a CPN and its translation, and the soundness proof (Definitions 16–17, Theorem 1) | Chapter 5.3 |
-| [`LeanFormalization.md`](Thesis/docs/LeanFormalization.md) | How faithful the Lean formalization in [`Proof/`](Proof) is to these notes — remarks, deviations and gaps | — |
+| [`ColoredPetriNets.md`](Thesis/docs/ColoredPetriNets.md) | Colored Petri Nets — syntax, semantics, reachability graph (Definitions 4–9) | Chapter 3 |
+| [`mCRL2.md`](Thesis/docs/mCRL2.md) | Linear Process Equations, the CPN→LPE translation, the modal μ-calculus (Definitions 13–15, 18) | Chapters 5–6 |
+| [`Bisimiliarity.md`](Thesis/docs/Bisimiliarity.md) | Bisimulation, and the soundness proof (Definitions 16–17, Theorem 1) | Chapter 5.3 |
+| [`LeanFormalization.md`](Thesis/docs/LeanFormalization.md) | How faithful [`Proof/`](Proof) is to the notes — deviations and gaps | — |
 
-Each file states the syntax and semantics of one formalism, keeps the thesis's definition
-numbering so anything can be traced back to the PDF, cross-links to the others, and ends with
-the bibliography entries the thesis cites for that material.
+Each file keeps the thesis's numbering, so any statement can be traced back to the PDF. The
+notes cover Chapters 2, 3, 5.1–5.3 and 6.1. Out of scope: BPMN itself (Chapter 4), the property
+templates (Chapter 6.2–6.3), results (Chapter 7) and the case study (Chapter 8).
 
-The notes cover Chapters 2, 3, 5.1–5.3 and 6.1 in full. Out of scope: BPMN itself (Chapter 4),
-related work and the property templates (Chapter 6.2–6.3, Appendix B), presentation of
-model-checking results (Chapter 7), and the case study (Chapter 8).
+## Checking it yourself
+
+Nothing here has to be taken on trust. In rough order of cost:
+
+```bash
+cd Proof && lake build                 # the formalization, Theorem 1 included
+cd Implementation/Lean && lake build   # translator #1, and its proofs
+bash Tests/scripts/check.sh            # all three translators against an external oracle
+```
+
+The last needs the [mCRL2 toolset](https://www.mcrl2.org/) and takes a few minutes; it compares
+the emitted specifications against each other, against the mCRL2 tools, and against a
+reachability graph built by [SNAKES](https://snakes.ibisc.univ-evry.fr/), a Petri net library
+that knows nothing about this thesis. [`Tests/README.md`](Tests/README.md) says what each of
+those comparisons can and cannot establish.
 
 ## Relationship to the thesis
 
-The notes are a transcription, not a rewrite. Where they depart from the printed text — either
-because the thesis contains a slip, or because a definition needed a gap closed to be total —
-the change is called out inline:
-
-- `> **Deviation from the thesis.**` — the printed version is stated, then what was changed and why.
-- `> **Addition to the thesis.**` — a convention not in the thesis at all.
-
-One deviation is intentionally left unmarked: Definition 9 is written `S = {M₀} ∪ R(M₀)`
-where the thesis writes `M₀ ∪ R(M₀)`, unioning an element with a set.
+The notes are a transcription, not a rewrite. Where they depart from the printed text — because
+the thesis contains a slip, or because a definition needed a gap closed to be total — the change
+is marked inline as `> **Deviation from the thesis.**` or `> **Addition to the thesis.**`, with
+the printed version quoted.
 
 ## The thesis
 
@@ -65,6 +78,6 @@ where the thesis writes `M₀ ∪ R(M₀)`, unioning an element with a set.
 > Formal System Analysis, April 2025.
 > Supervisors: Dr. Ir. Tim Willemse, Dr. Debjyoti Bera, Dr. Raúl Monti.
 
-The code written for the thesis lives on the `mcrl2-model-checking` branch of the
+The code written for the thesis itself lives on the `mcrl2-model-checking` branch of the
 [OfflineMBT repository](https://github.com/dbera/OfflineMBT/tree/mcrl2-model-checking), not
-in this repository.
+here.

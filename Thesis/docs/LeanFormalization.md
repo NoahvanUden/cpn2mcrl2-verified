@@ -414,7 +414,7 @@ parameter list of the process and $h_t$ the variable list of the sum. So the tup
 is the indexing of `LPESyntax.next` by a place, the projection $s_p$ is a constructor, and
 `ExprTy` keeps the two constructors it had. Items 1 and 2 of §5.1's list do not happen, and
 neither does the ripple into `Bindings`, `CPN.varTypeMem` and every example that item 2
-predicts. [`Implementation/Lean/README.md`](../../Implementation/Lean/README.md) §4.1 reaches
+predicts. [`Implementation/Lean/Notes.md`](../../Implementation/Lean/Notes.md) §1 reaches
 the same conclusion from the mCRL2 side, independently.
 
 **Item 4, "the one genuinely new proof obligation", is not a proof.** There is no substitution
@@ -423,7 +423,7 @@ variables, by restricting that binding to them; so moving $E(p,t)$ from $V$ into
 $\mathrm{Var}(t)$ is not a re-indexing of the term but a different restriction of the same
 binding, and the obligation is discharged by how scoping is modelled rather than by an
 induction. Both translators of [`Implementation/`](../../Implementation) report the same
-thing, and [`Implementation/Dafny/README.md`](../../Implementation/Dafny/README.md) §5 draws
+thing, and [`Implementation/Dafny/Notes.md`](../../Implementation/Dafny/Notes.md) draws
 the conclusion the three developments now agree on: the cost of this obligation was never
 dependent types against SMT, it was intrinsic scoping against extrinsic scoping.
 
