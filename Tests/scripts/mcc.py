@@ -17,8 +17,13 @@ Nets that import are then optionally run through the full pipeline, so that a co
 run is a test and not only a survey. That is off by default because the state spaces in
 that corpus are far beyond anything `Corpus.md` calls tier 1.
 
+`--survey` answers the more useful question. The importer stops at a file's *first*
+problem, so a bucket count says which construct is hit first and not what a corpus
+actually needs; the survey counts, over every coloured file, which PNML constructs
+appear at all. "All 61 use cyclic enumerations" is an answer someone can act on.
+
 Usage:
-    python mcc.py <dir-of-pnml> [--translate] [--limit N]
+    python mcc.py <dir-of-pnml> [--survey] [--translate] [--limit N]
 """
 
 import collections
@@ -56,6 +61,52 @@ def bucket(message):
         if re.search(pattern, m):
             return name
     return m[:60]
+
+
+# The PNML constructs worth counting: what the native language has, and what it lacks.
+SURVEY = [
+    ("cyclicenumeration", "cyclic enumeration (successor/predecessor)", False),
+    ("finiteintrange", "finite integer range", False),
+    ("dotconstant", "the dot sort (a black token)", False),
+    ("<all", "<all>, one token of every colour", False),
+    ("namedoperator", "user-defined operator", False),
+    ("partition", "sort partition", False),
+    ("successor", "successor", False),
+    ("predecessor", "predecessor", False),
+    ("finiteenumeration", "finite enumeration", True),
+    ("productsort", "product sort", True),
+    ("tuple", "tuple", True),
+]
+
+
+def is_coloured(path):
+    """A high-level net: symmetric nets or HLPNG, not the P/T type."""
+    try:
+        head = open(path, encoding="utf-8", errors="replace").read(4000)
+    except OSError:
+        return False
+    return "symmetricnet" in head or "highlevelnet" in head or "HLPNG" in head
+
+
+def survey(files):
+    """Which constructs appear at all, over every file. See the module docstring."""
+    counts = collections.Counter()
+    for f in files:
+        try:
+            text = open(f, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        for tag, _, _ in SURVEY:
+            probe = tag if tag.startswith("<") else "<" + tag
+            if probe in text:
+                counts[tag] += 1
+    print("")
+    print("what the %d files use:" % len(files))
+    # Zero rows are printed too: that no coloured model uses <finiteenumeration>, the
+    # one sort the language does have, is the more useful half of the measurement.
+    for tag, label, supported in SURVEY:
+        print("  %4d  %-42s %s" % (counts[tag], label,
+                                   "supported" if supported else "NOT in 4.1"))
 
 
 def main(argv):
@@ -108,6 +159,9 @@ def main(argv):
         print("  %d not the PNML this reads" % sum(malformed.values()))
         for reason, n in malformed.most_common():
             print("      %4d  %s" % (n, reason))
+
+    if "--survey" in argv:
+        survey([f for f in files if is_coloured(f)])
 
     if translate and ok:
         print("\ntranslating the %d that imported:" % len(ok))

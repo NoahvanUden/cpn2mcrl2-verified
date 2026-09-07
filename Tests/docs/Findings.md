@@ -266,3 +266,69 @@ Not a defect, and the point of the exercise.
   encoding and 5 under the list encoding, bisimilar anyway — and the oracle independently says 4
   is the right number, which is a stronger statement than the two encodings agreeing with each
   other.
+
+---
+
+## 10. None of the Model Checking Contest's coloured models fits the language
+
+**Severity: none for the code, high for the plan that was built on the corpus.**
+
+[`InputFormat.md`](../../Implementation/docs/InputFormat.md) §2.3 calls the corpus "the prize"
+and asks for a number before M7 is scheduled rather than assumed. The number is **zero**.
+
+Over a 30-model sample of the 2024 edition (`python Tests/scripts/mcc.py <dir> --survey`):
+
+```
+443 PNML files
+    0 imported (0.0%)
+  443 outside the expression language
+       382  a place/transition net, not coloured
+        61  cyclic enumeration (successor)
+```
+
+The bucket count only says what each file trips over *first*, so the survey counts what the 61
+coloured files use at all:
+
+| Construct | In how many of the 61 | In [§4.1](../../Implementation/docs/InputFormat.md#41-colors) |
+| --- | --- | --- |
+| `<cyclicenumeration>` | **61** | no |
+| `<successor>` | 41 | no |
+| `<predecessor>` | 32 | no |
+| `<dotconstant>` | 35 | no |
+| `<all>` | 20 | no |
+| `<productsort>` | 23 | yes |
+| `<tuple>` | 23 | yes |
+| `<finiteenumeration>` | **0** | yes |
+
+The two lines that matter are the first and the last. **Every coloured model in the sample
+declares its colours as cyclic enumerations, and not one uses the finite enumeration** — the only
+enumerated sort the native format has. This is not a near miss that one more term would close:
+a cyclic enumeration is a finite set *plus* a successor operation that wraps, and §4.1's
+`enum(name, [id, ...])` is the bare set. Two thirds of the files then actually apply `successor`
+or `predecessor`, so dropping the operation and keeping the set would not preserve behaviour.
+
+**Why the corpus looks like this.** MCC models are parameterised families — `BridgeAndVehicles-COL-V20P10`,
+`AirplaneLD-COL-0010` — generated at a range of sizes, and a cyclic enumeration is how you write
+"$n$ vehicles" once and instantiate it at 10 and at 20. It is the natural encoding for a scaling
+benchmark, and the hand-written fixtures here are the natural encoding for a worked example.
+They do not meet.
+
+**What this does not mean.** It is not a defect in the importer: the round trip of
+[`Implementation/tools/README.md`](../../Implementation/tools/README.md) is green, and every
+refusal above is a correct refusal with a specific reason. It is not a defect in the language
+either — §4.1 is Definition 5 and Definition 5 has no successor. It means the argument of §2.3,
+that PNML brings a large free test set with it, does not hold at the current expression language,
+and §2.3 should say so.
+
+**What would change it.** One construct: `cyclicenumeration` as a colour whose constants are a
+list and whose two extra terms are `succ`/`pred` modulo the length. That is a change to
+Definition 5's colour sets, to $\mathrm{EXPR}$, to the T2 obligations about the emitted term, and
+to all three translators — so it is a thesis-level decision and not a patch, and it is recorded
+here rather than taken. With it, 61 files become candidates; `<dotconstant>` (35) and `<all>`
+(20) are the next two, and are smaller.
+
+**Recorded, not worked around.** [`Plan.md`](Plan.md) §7's E6 anticipated exactly this: "if very
+little of the Model Checking Contest corpus falls inside the expression language, the honest
+outcome is to report that number and stop, which is a finding about the language rather than a
+failure of the plan." The subset that fits is empty, so the fallback — "run on the subset that
+fits, and report the size of the subset alongside every result" — reports zero and runs nothing.

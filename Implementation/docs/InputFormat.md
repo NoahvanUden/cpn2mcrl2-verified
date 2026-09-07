@@ -89,6 +89,19 @@ PNML, and using them as a differential test set at M7 would be worth considerabl
 hand-written fixture set. How much of that corpus falls inside the expression language of
 [§4](#4-the-native-format) should be measured before M7 is scheduled rather than assumed.
 
+**Measured, and the prize is not there.** Over a 30-model sample of the 2024 edition, **0 of 443
+files** fall inside §4: 382 are place/transition nets, and all 61 colored ones declare their
+colors as *cyclic* enumerations — a finite set plus a wrapping successor — where §4.1 has only
+the bare set. Two thirds of them then apply `successor` or `predecessor`, and **not one uses
+`<finiteenumeration>`**, the only enumerated sort §4.1 has. The corpus is written that way
+because MCC models are parameterized families instantiated at several sizes, which is what a
+cyclic enumeration is for. So M7 keeps its other justification — PNML as a standard interchange
+format, and an importer outside the trust boundary — and loses this one. Adding cyclic
+enumerations would change Definition 5, $\mathrm{EXPR}$, the T2 obligations and all three
+translators, so it is a thesis-level decision rather than a patch.
+[`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §10 has the full breakdown and the
+command that reproduces it.
+
 ---
 
 ## 3. The decision

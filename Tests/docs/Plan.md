@@ -260,7 +260,7 @@ plan.
 | **E3** | The harness: legs A to D, one command, CI-shaped | E2 | Green on tier 1, red when a net is deliberately broken | **Done**, and making it go red is what found [`Findings.md`](Findings.md) §1 and §2 |
 | **E4** | The existing fixtures, and tier 2 | E3 | `counter`, `jobs` and `multitoken` pass leg B, or the disagreement is written down | **Done** — five tier-2 nets, and all three goldens confirmed |
 | **E5** | Randomised nets within §4.1, with shrinking | E4 | A generator, a seed corpus of survivors, and the T6 row added to `Plan.md` §2 | **Done** — and it found [`Findings.md`](Findings.md) §8 |
-| **E6** | The Model Checking Contest corpus at scale | E0, E5 | The §2.3 measurement, and a run over whatever falls inside the language | **Tool written, corpus not fetched** |
+| **E6** | The Model Checking Contest corpus at scale | E0, E5 | The §2.3 measurement, and a run over whatever falls inside the language | **Done, and negative: 0 of 443** |
 
 ### E0 — M7
 
@@ -334,6 +334,14 @@ expression language, the honest outcome is to report that number and stop, which
 about the language rather than a failure of the plan.
 
 > **Fallback.** Run on the subset that fits, and report the size of the subset alongside every result.
+
+**Done, and it went the way the paragraph above allows for.** Over a 30-model sample of the 2024
+edition, 0 of 443 files import: 382 are place/transition nets and all 61 coloured ones declare
+their colours as cyclic enumerations, which [§4.1](../../Implementation/docs/InputFormat.md) has
+no term for. Not one of the 61 uses the finite enumeration. The measurement is
+`Tests/scripts/mcc.py <dir> --survey`, the full breakdown is
+[`Findings.md`](Findings.md) §10, and the subset that fits is empty, so the fallback reports zero
+and runs nothing.
 
 ---
 

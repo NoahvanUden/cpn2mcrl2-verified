@@ -260,7 +260,7 @@ direction to check first.
 | **M4** | Verified translator **#2, Dafny**. Same specification, SMT-discharged. | M1, M3 | T2 with T3 | Done |
 | **M5** | Verified translator **#3, OCaml with GOSPEL/Cameleer**. | M1, M3 | T0 only; T2 not reached | Done, as a negative result: the translator, and the reason it is not verified |
 | **M6** | The bag-to-list refinement lemma, and the fast backend behind it. | M3, [§5](#5-the-bag-versus-list-problem) | T5 | Done |
-| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M3 (M1 is gone) | broader T1 | Importer done; the corpus run is not |
+| **M7** | PNML importers, and the Model Checking Contest corpus as a test set. | M3 (M1 is gone) | broader T1 | Importer done; the corpus is measured, and holds nothing this reads |
 
 M0 through M3 are the spine. M4 and M5 are what the multiple languages are for: the same
 obligations discharged by SMT automation and by a mainstream functional toolchain, which is the
@@ -309,7 +309,7 @@ what finishing would take.
 
 ### 6.2 What is left
 
-**M7's importer is done and its corpus run is not.**
+**M7's importer is done, and the corpus it was aimed at turns out to be empty for us.**
 [`Implementation/tools/`](../tools/README.md) reads ISO/IEC 15909-2 Symmetric Nets and HLPNG
 into the native format, once rather than three times, because it is outside the trust boundary;
 `counter` and `multitoken` round-trip to byte-identical output through all three translators.
@@ -317,15 +317,20 @@ into the native format, once rather than three times, because it is outside the 
 a product sort, so the same behaviour has to be written as a tuple pattern, which is a different
 net with a bisimilar LTS. See [`tools/README.md`](../tools/README.md) §3.3.
 
-What remains of M7 is the measurement §2.3 of [`InputFormat.md`](InputFormat.md) asks for — how
-much of the Model Checking Contest corpus falls inside the expression language.
-`Tests/scripts/mcc.py` performs it, bucketed by why each file was refused; the corpus itself has
-not been fetched.
+The measurement §2.3 of [`InputFormat.md`](InputFormat.md) asks for has now been made, by
+`Tests/scripts/mcc.py`, and the answer is **0 of 443 files** over a 30-model sample of the 2024
+edition. 382 are place/transition nets; all 61 coloured ones declare their colours as cyclic
+enumerations, which §4.1 has no term for, and not one uses the finite enumeration §4.1 does have.
+So M7 keeps the half of its justification that is about PNML being a standard format read outside
+the trust boundary, and loses the half that was about a free corpus. Supporting the corpus means
+adding cyclic enumerations to Definition 5 and to $\mathrm{EXPR}$, which is a thesis-level change
+rather than an importer one. [`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §10.
 
-**A defect the corpus work found, which is open.** Two enumerations that share a constructor
-name produce text `mcrl22lps` refuses, in all three translators, and nothing in Definition 5 or
-in the T1 checks forbids the net. Fixing it means either narrowing the input at T1 or qualifying
-constructor names in the printer, and both change all three translators. See
+**A defect the corpus work found, now fixed.** Two enumerations that share a constructor name
+produce text `mcrl22lps` refuses, and nothing in Definition 5 or in the original seven T1 checks
+forbade the net. All three translators now refuse it at T1, recorded as an eighth check in
+[`InputFormat.md`](InputFormat.md) §4.3 and marked as an addition to the thesis, because
+Definition 5 does not ask for it and the target does. See
 [`Tests/docs/Findings.md`](../../Tests/docs/Findings.md) §8.
 
 **M5's proofs are closed rather than pending**, on the grounds

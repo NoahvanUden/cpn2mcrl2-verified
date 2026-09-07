@@ -20,6 +20,7 @@ and the comparison is against something whose semantics were fixed before this p
 | [`docs/Plan.md`](docs/Plan.md) | Why an external oracle, what it can and cannot establish, why M7 comes first, the four comparison legs, and milestones E0 to E6 |
 | [`docs/Oracle.md`](docs/Oracle.md) | The contract any oracle must satisfy, the SNAKES evaluation, and the ordered alternatives if it does not fit |
 | [`docs/Corpus.md`](docs/Corpus.md) | The test nets: thirteen tiny ones over `Bool` and enumerations first, then records, then the integers |
+| [`docs/Findings.md`](docs/Findings.md) | What building it found: two checks that could not fail, one translator defect, and E6's negative result |
 
 ## The short version
 
@@ -38,9 +39,9 @@ and the comparison is against something whose semantics were fixed before this p
 
 ## Status
 
-**E0 to E5 are done; E6 has its tool and not its corpus.** `scripts/check.sh` is green on 21
-nets — thirteen tier-1, five tier-2, and the three existing fixtures — in both encodings, across
-all three translators, against SNAKES 0.9.33 as the oracle.
+**E0 to E6 are done.** `scripts/check.sh` is green on 21 nets — thirteen tier-1, five tier-2,
+and the three existing fixtures — in both encodings, across all three translators, against
+SNAKES 0.9.33 as the oracle.
 
 What it found is in [`docs/Findings.md`](docs/Findings.md), and the first two are the ones worth
 reading:
@@ -52,11 +53,18 @@ reading:
 2. **`expected.tsv` is checked out with CRLF**, so the shape check compared `3` with `3\r` and
    failed on every fixture in the Lean and Dafny harnesses.
 
-One open defect, found by the random search and not fixed here because the fix is a decision
-about the project rather than about this directory: **two enumerations that share a constructor
-name emit text `mcrl22lps` refuses**, in all three translators, and nothing in Definition 5 or
-in the T1 checks forbids the net. See [`docs/Findings.md`](docs/Findings.md) §8, and
-`corpus/known-failing/shared-ctor.cpn.json`.
+One genuine defect, found by the random search: **two enumerations that share a constructor name
+emit text `mcrl22lps` refuses**, in all three translators, and nothing in Definition 5 or in the
+seven T1 checks forbade the net. The author chose to narrow the input, so all three now refuse it
+as an eighth T1 check, and `corpus/rejected/shared-ctor.cpn.json` asserts that they do. See
+[`docs/Findings.md`](docs/Findings.md) §8.
+
+One negative result, which is E6: **none of the Model Checking Contest's coloured models fits
+the expression language** — 0 of 443 files over a 30-model sample, because every coloured model
+declares its colours as cyclic enumerations and not one uses the finite enumeration the native
+format has. [`InputFormat.md`](../Implementation/docs/InputFormat.md) §2.3 asked for that number
+before M7 was scheduled; it is now measured rather than assumed. See
+[`docs/Findings.md`](docs/Findings.md) §10.
 
 And the thing the directory exists for: **all three golden LTSs are confirmed by an
 implementation that never read this thesis**, two of which had never been checked against
@@ -65,9 +73,9 @@ anything.
 ## Running it
 
 ```bash
-bash Tests/scripts/check.sh              # the four legs, over the whole corpus
-python Tests/scripts/fuzz.py --runs=50   # random nets, shrunk on failure
-python Tests/scripts/mcc.py <dir>        # how much of a PNML corpus fits
+bash Tests/scripts/check.sh                  # the four legs, over the whole corpus
+python Tests/scripts/fuzz.py --runs=50      # random nets, shrunk on failure
+python Tests/scripts/mcc.py <dir> --survey  # how much of a PNML corpus fits, and why not
 ```
 
 The oracle lives in `Tests/.venv` (`pip install snakes`), so nothing outside this directory
