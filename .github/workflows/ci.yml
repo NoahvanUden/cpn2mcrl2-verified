@@ -19,12 +19,8 @@ jobs:
     runs-on: self-hosted
     steps:
       # clean: false keeps .lake/packages/mathlib on disk between runs on this persistent
-      # runner. With the default `git clean -ffdx`, every run re-downloaded Mathlib's ~2.8GB
-      # olean cache from scratch, and use-mathlib-cache's own re-upload of that to GitHub's
-      # Actions cache saturated this connection's upload and got the job cancelled outright
-      # (observed: stuck at 54% for 17 minutes, then "The operation was canceled") — so this
-      # replaces a remote cache that doesn't fit the connection with the local disk that's
-      # already sitting right there.
+      # runner. With the default `git clean -ffdx`, every run wiped it, forcing a full
+      # `lake exe cache get` from Mathlib's own CDN even when nothing here changed.
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -34,26 +30,34 @@ jobs:
       # so it never fetches Mathlib a second time), and Bridge/ requires Cpn2mCrl2 by path,
       # so building that translator before Bridge means nothing there is fetched blind.
       #
-      # use-mathlib-cache is left off everywhere: it's the GitHub Actions cache upload/download
-      # that just proved unreliable here, and `lake exe cache get` is already fast on a repeat
-      # run once .lake/packages/mathlib is on disk from the run before.
+      # use-mathlib-cache genuinely has to stay "true" here — it's what runs `lake exe cache
+      # get` at all, without which lake falls back to compiling the whole of Mathlib from
+      # source. use-github-cache is the separate, unrelated knob that was the real problem: it
+      # wraps that in an extra actions/cache upload/download of the resulting ~2.8GB .lake
+      # directory, and the upload half saturated this connection and got a job cancelled
+      # outright (observed: stuck at 54% for 17 minutes, then "The operation was canceled").
+      # With clean: false above, .lake/packages/mathlib already lands on persistent local
+      # disk, making that remote copy pure overhead here regardless.
       - name: Proof/ — the formalization, Theorem 1 included
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Proof
-          use-mathlib-cache: "false"
+          use-mathlib-cache: "true"
+          use-github-cache: "false"
 
       - name: Implementation/Lean/ — translator #1 (no Mathlib dependency)
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Implementation/Lean
           use-mathlib-cache: "false"
+          use-github-cache: "false"
 
       - name: Implementation/Lean/Bridge/ — composes T2 with Theorem 1
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Implementation/Lean/Bridge
-          use-mathlib-cache: "false"
+          use-mathlib-cache: "true"
+          use-github-cache: "false"
 
       - name: Translate Example 3, both encodings
         run: |
