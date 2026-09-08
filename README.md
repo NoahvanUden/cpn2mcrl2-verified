@@ -1,20 +1,21 @@
-# Cpn2mCrl2
-
+# cpn2mcrl2-verified
 [![CI](https://github.com/NoahvanUden/Cpn2mCrl2/actions/workflows/ci.yml/badge.svg)](https://github.com/NoahvanUden/Cpn2mCrl2/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Translating **Colored Petri Nets to mCRL2**, with the translation proved correct and the
-proof connected to a program that emits real mCRL2 text.
+A sound translation from **Colored Petri Nets** to **mCRL2**, with the translation proved correct and the
+proof connected to a program that producesl mCRL2 model..
 
 The material comes from the MSc thesis *Model checking for analysis of BPMN models*, which
-defines a translation from Colored Petri Nets — the formal semantics of the BPMN models used
-in the Matala project at TNO-ESI/ASML — to mCRL2 Linear Process Equations, and proves the two
+defines a translation from Colored Petri Nets, the formal semantics of the BPMN models used
+in the Matala project at TNO-ESI and ASML, to mCRL2 models, and proves the two
 bisimilar. A property checked with the mCRL2 model checker therefore holds of the mCRL2
-specification exactly when it holds of the original model.
+specification if and only if it holds of the original model.
 
 The repository holds five things: the thesis, notes transcribing its definitions, a Lean 4
 formalization with the soundness theorem proved, three implementations of the translation, and
 a test harness that checks them against a reachability graph computed outside this repository.
+
+The formalization of the proofs of the thesis and the implementation are done using Claude Code.
 
 ## Contents
 
@@ -53,8 +54,7 @@ templates (Chapter 6.2–6.3), results (Chapter 7) and the case study (Chapter 8
 
 ## Checking it yourself
 
-Nothing here has to be taken on trust. In rough order of cost:
-
+To verify the soundness of the proof or test the implementation again [SNAKES](https://snakes.ibisc.univ-evry.fr/), run the following commands.
 ```bash
 cd Proof && lake build                 # the formalization, Theorem 1 included
 cd Implementation/Lean && lake build   # translator #1, and its proofs
