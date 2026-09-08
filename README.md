@@ -1,5 +1,5 @@
 # cpn2mcrl2-verified
-[![CI](https://github.com/NoahvanUden/Cpn2mCrl2/actions/workflows/ci.yml/badge.svg)](https://github.com/NoahvanUden/Cpn2mCrl2/actions/workflows/ci.yml)
+[![CI](https://github.com/NoahvanUden/cpn2mcrl2-verified/actions/workflows/ci.yml/badge.svg)](https://github.com/NoahvanUden/Cpn2mCrl2/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A sound translation from **Colored Petri Nets** to **mCRL2**, with the translation proved correct and the
