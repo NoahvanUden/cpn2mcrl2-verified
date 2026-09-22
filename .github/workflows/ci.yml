@@ -2,6 +2,11 @@
 # about, run independently. This is the cheapest evidence that the claims in the READMEs
 # type-check: no `sorry` in Lean, no unproved lemma in Dafny, and every translator compiles.
 #
+# The Lean half of that is asserted rather than assumed. `sorry` is a warning in Lean 4, so a
+# build stays green with one in it — verified, exit 0 and "Build completed successfully" with
+# one in Correct.lean. The check-lean-proved.sh steps below are what turn the sentences in
+# Proof/README.md and Implementation/Lean/README.md into machine-checked claims.
+#
 # What this does NOT run: Tests/scripts/check.sh, which needs the mCRL2 toolset and SNAKES,
 # and is heavier than a build workflow should be. See Tests/README.md for how to run that
 # by hand.
@@ -25,6 +30,20 @@ jobs:
         with:
           clean: false
 
+      # Blunt on purpose, and cheap: no tracked .lean source contains the word at all, so there
+      # is nothing to carve an exception around -- not even the scripts/Axioms.lean files, which
+      # spell the axiom name instead. This catches one wherever it is written, including in a
+      # lemma that no theorem below happens to reach; the axiom steps catch what it cannot.
+      # git ls-files keeps the scan to tracked sources, so .lake/packages/mathlib is out of it.
+      - name: No `sorry` in the Lean sources
+        run: |
+          files=$(git ls-files 'Proof/*.lean' 'Implementation/Lean/*.lean')
+          echo "scanning $(echo "$files" | wc -l) Lean sources"
+          if echo "$files" | xargs grep -nw sorry; then
+            echo '::error::a Lean source has an unproved declaration; the READMEs say none does'
+            exit 1
+          fi
+
       # Order matters: Proof/ populates the shared Mathlib download that Bridge/ points at
       # (Implementation/Lean/Bridge/lakefile.toml sets packagesDir to Proof/.lake/packages,
       # so it never fetches Mathlib a second time), and Bridge/ requires Cpn2mCrl2 by path,
@@ -45,6 +64,12 @@ jobs:
           use-mathlib-cache: "true"
           use-github-cache: "false"
 
+      # Two phases, per .github/scripts/check-lean-proved.sh: the build log must carry no
+      # `declaration uses` warning, and `#print axioms` on the theorems must report nothing
+      # outside propext / Classical.choice / Quot.sound, which is what rules out `sorryAx`.
+      - name: Proof/ — nothing unproved, standard axioms only
+        run: bash .github/scripts/check-lean-proved.sh Proof
+
       - name: Implementation/Lean/ — translator #1 (no Mathlib dependency)
         uses: leanprover/lean-action@v1
         with:
@@ -52,12 +77,19 @@ jobs:
           use-mathlib-cache: "false"
           use-github-cache: "false"
 
+      - name: Implementation/Lean/ — the T2 theorems, same check
+        run: bash .github/scripts/check-lean-proved.sh Implementation/Lean
+
       - name: Implementation/Lean/Bridge/ — composes T2 with Theorem 1
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: Implementation/Lean/Bridge
           use-mathlib-cache: "true"
           use-github-cache: "false"
+
+      # The composed theorems, which are the ones the README's claim is really about.
+      - name: Implementation/Lean/Bridge/ — the composed theorems, same check
+        run: bash .github/scripts/check-lean-proved.sh Implementation/Lean/Bridge
 
       - name: Translate Example 3, both encodings
         run: |
