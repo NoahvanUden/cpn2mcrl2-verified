@@ -3,7 +3,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A sound translation from **Colored Petri Nets** to **mCRL2**, with the translation proved correct and the
-proof connected to a program that producesl mCRL2 model..
+proof connected to a program that produces mCRL2 models.
 
 The material comes from the MSc thesis *Model checking for analysis of BPMN models*, which
 defines a translation from Colored Petri Nets, the formal semantics of the BPMN models used
