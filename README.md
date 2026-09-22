@@ -54,7 +54,7 @@ templates (Chapter 6.2–6.3), results (Chapter 7) and the case study (Chapter 8
 
 ## Checking it yourself
 
-To verify the soundness of the proof or test the implementation again [SNAKES](https://snakes.ibisc.univ-evry.fr/), run the following commands.
+To verify the soundness of the proof or test the implementation against [SNAKES](https://snakes.ibisc.univ-evry.fr/), run the following commands.
 ```bash
 cd Proof && lake build                 # the formalization, Theorem 1 included
 cd Implementation/Lean && lake build   # translator #1, and its proofs
